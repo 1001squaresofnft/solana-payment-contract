@@ -1,0 +1,21 @@
+[toolchain]
+
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+mintedgem = "Dhvb9BhQes4sCwUdhut7giVRuwvGgQeZTVrKUmzqwaor"
+
+[programs.devnet]
+mintedgem = "Dhvb9BhQes4sCwUdhut7giVRuwvGgQeZTVrKUmzqwaor"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "/Users/lainhathoang/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
