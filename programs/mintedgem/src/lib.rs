@@ -3,7 +3,7 @@ use anchor_spl::token;
 use anchor_lang::system_program;
 
 
-declare_id!("Dhvb9BhQes4sCwUdhut7giVRuwvGgQeZTVrKUmzqwaor");
+declare_id!("CdMkddBBv9zdB33UErvhzqH4XcZ3ZSxrBxY72Qo1vyUV");
 
 #[program]
 pub mod mintedgem {
@@ -20,10 +20,60 @@ pub mod mintedgem {
         master.owner = ctx.accounts.signer.key();
         master.percent = percent;
 
+        emit!(OwnerInitialized {});
+
         Ok(())
     }
 
-    pub fn transfer_in(ctx: Context<TransferTokenContext>, amount: u64) -> Result<()> {
+    pub fn init_vault_sol(ctx: Context<InitVaultSolCtx>) -> Result<()> {
+        
+        require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), Errors::NotOwner);
+
+        if ctx.accounts.master.is_vault_sol_initialized {
+            return Err(Errors::VaultSolAlreadyInitialized.into());
+        }
+
+        ctx.accounts.master.is_vault_sol_initialized = true;
+
+        emit!(VaultSolInitialized {});
+
+        Ok(())
+    }
+
+    pub fn init_vault_done_token(ctx: Context<InitVaultDoneTokenCtx>) -> Result<()> {
+
+        require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), Errors::NotOwner);
+
+        if ctx.accounts.master.is_vault_done_token_initialized {
+            return Err(Errors::VaultDoneTokenAlreadyInitialized.into());
+        }
+
+        ctx.accounts.master.is_vault_done_token_initialized = true;
+
+        emit!(VaultDoneTokenInitialized {});
+
+        Ok(())
+    }
+
+    pub fn transfer_sol_in(ctx: Context<TransferSolCtx>, amount: u64) -> Result<()> {
+        let cpi_context = CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+            system_program::Transfer {
+                from: ctx.accounts.signer.to_account_info().clone(),
+                to: ctx.accounts.vault_sol.to_account_info().clone(),
+            },
+        );
+        system_program::transfer(cpi_context, amount)?;
+
+        emit!(DepositSolEvent {
+            depositor: ctx.accounts.signer.key(),
+            amount: amount,
+        });
+
+        Ok(())
+    }
+
+    pub fn transfer_done_token_in(ctx: Context<TransferTokenCtx>, amount: u64) -> Result<()> {
         let transfer_instruction = token::Transfer {
             from: ctx.accounts.sender_token_account.to_account_info(),
             to: ctx.accounts.vault_token.to_account_info(),
@@ -35,7 +85,12 @@ pub mod mintedgem {
             transfer_instruction,
         );
     
-         anchor_spl::token::transfer(cpi_ctx, amount)?;
+        anchor_spl::token::transfer(cpi_ctx, amount)?;
+
+        emit!(DepositDoneTokenEvent {
+            depositor: ctx.accounts.signer.key(),
+            amount_done: amount,
+        });
 
         Ok(())
     }
@@ -136,12 +191,9 @@ pub mod mintedgem {
     }
 
     pub fn withdraw_sol(ctx: Context<WithdrawSolContext>, amount_sol: u64) -> Result<()> {
-        let master = &ctx.accounts.master;
         let vault_sol = &ctx.accounts.vault_sol;
 
-        if master.owner != ctx.accounts.signer.key() {
-            return Err(Errors::Unauthorized.into());
-        }
+        require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), Errors::NotOwner);
 
         if vault_sol.to_account_info().lamports() < amount_sol {
             return Err(Errors::DeoDuSoDu.into());
@@ -159,11 +211,7 @@ pub mod mintedgem {
     }
 
     pub fn withdraw_done_token(ctx: Context<WithdrawDoneTokenContext>, amount_done: u64) -> Result<()> {
-        let master = &ctx.accounts.master;
-
-        if master.owner != ctx.accounts.signer.key() {
-            return Err(Errors::Unauthorized.into());
-        }
+        require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), Errors::NotOwner);
 
         if ctx.accounts.vault_token.amount < amount_done {
             return Err(Errors::DeoDuSoDu.into());
@@ -194,18 +242,29 @@ pub mod mintedgem {
 
         Ok(())
     }
+
+    pub fn set_percent(ctx: Context<SetPercentCtx>, percent: u64) -> Result<()> {
+        require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), Errors::NotOwner);
+
+        ctx.accounts.master.percent = percent;
+
+        emit!(SetPercent {
+            percent: percent,
+        });
+
+        Ok(())
+    }
     
-    // pub fn init_done_token_vol_ctx(ctx: Context<InitDoneTokenVolContext>) -> Result<()> {
-    //     Ok(())
-    // }
-    pub fn hello(ctx: Context<Hello>) -> Result<()> {
-        msg!("Hello, world!");
+    pub fn hello(ctx: Context<HelloCtx>) -> Result<()> {
+        emit!(Hello {
+            msg: String::from("Hello, Mintedgem!"),
+        });
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-pub struct Hello {}
+pub struct HelloCtx {}
 
 // CONTEXT
 #[derive(Accounts)]
@@ -219,6 +278,21 @@ pub struct InitializeContext<'info> {
     )]
     master: Account<'info, Master>,
 
+    #[account(mut)]
+    signer: Signer<'info>,
+    system_program: Program<'info, System>,
+    rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct InitVaultSolCtx<'info> {
+    #[account(
+        mut, 
+        seeds = [b"master"],
+        bump,
+    )]
+    master: Account<'info, Master>,
+
     #[account(
         init, 
         payer = signer,
@@ -227,6 +301,21 @@ pub struct InitializeContext<'info> {
         space = 8 + std::mem::size_of::<VaultSol>(),
     )]
     vault_sol: Account<'info, VaultSol>,
+
+    #[account(mut)]
+    signer: Signer<'info>,
+    system_program: Program<'info, System>,
+    rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct InitVaultDoneTokenCtx<'info> {
+    #[account(
+        mut, 
+        seeds = [b"master"],
+        bump,
+    )]
+    master: Account<'info, Master>,
 
     /// CHECK
     #[account(
@@ -256,7 +345,7 @@ pub struct InitializeContext<'info> {
 }
 
 #[derive(Accounts)]
-pub struct TransferTokenContext<'info> {
+pub struct TransferTokenCtx<'info> {
     #[account(
         mut, 
         seeds = [b"master"],
@@ -286,6 +375,16 @@ pub struct TransferTokenContext<'info> {
     system_program: Program<'info, System>,
     token_program: Program<'info, token::Token>,
     rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct TransferSolCtx<'info> {
+    #[account(
+        mut, 
+        seeds = [b"master"],
+        bump,
+    )]
+    master: Account<'info, Master>,
 
     #[account(
         mut,
@@ -293,6 +392,10 @@ pub struct TransferTokenContext<'info> {
         bump
     )]
     vault_sol: Account<'info, VaultSol>,
+
+    #[account(mut)]
+    signer: Signer<'info>,
+    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -373,11 +476,6 @@ pub struct CreatePaymentByDoneContext<'info> {
         bump,
         space = 8 + std::mem::size_of::<TransactionDoneTokenVolume>(),
     )]
-    // #[account(
-    //     mut,
-    //     seeds = [b"transaction_done_token_volume", signer.key().as_ref()],
-    //     bump,
-    // )]
     transaction_done_token_volume: Account<'info, TransactionDoneTokenVolume>,
 
     /// CHECK
@@ -458,28 +556,26 @@ pub struct WithdrawDoneTokenContext<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-// #[derive(Accounts)]
-// pub struct InitDoneTokenVolContext<'info> {
-//     #[account(
-//         init, 
-//         payer = signer,
-//         seeds = [b"transaction_done_token_volume", signer.key().as_ref()],
-//         bump, 
-//         space = 8 + std::mem::size_of::<TransactionDoneTokenVolume>(),
-//     )]
-//     transaction_done_token_volume: Account<'info, TransactionDoneTokenVolume>,
+#[derive(Accounts)]
+pub struct SetPercentCtx<'info> {
+    #[account(
+        mut,
+        seeds = [b"master"],
+        bump
+    )]
+    master: Account<'info, Master>,
 
-//     #[account(mut)]
-//     signer: Signer<'info>,
-
-//     system_program: Program<'info, System>,
-//     token_program: Program<'info, token::Token>,
-// }
+    #[account(mut)]
+    signer: Signer<'info>,
+    system_program: Program<'info, System>,
+}
 
 // ACCOUNTS
 #[account]
 pub struct Master {
     pub is_initialized: bool,
+    pub is_vault_sol_initialized: bool,
+    pub is_vault_done_token_initialized: bool,
     pub owner: Pubkey,
     pub percent: u64,
 }
@@ -517,6 +613,12 @@ pub enum Errors {
     MasterAccountAlreadyInitialized,
     #[msg("minted-gem: Deo du so du")]
     DeoDuSoDu,
+    #[msg("Only owner can call this function!")]
+    NotOwner,
+    #[msg("Vault SOL is already initialized")]
+    VaultSolAlreadyInitialized,
+    #[msg("Vault DONE token is already initialized")]
+    VaultDoneTokenAlreadyInitialized,
 }
 
 // EVENTS
@@ -533,6 +635,18 @@ pub struct CreatePaymentByDoneEvent {
 }
 
 #[event]
+pub struct DepositSolEvent {
+    pub depositor: Pubkey,
+    pub amount: u64,
+}
+
+#[event]
+pub struct DepositDoneTokenEvent {
+    pub depositor: Pubkey,
+    pub amount_done: u64,
+}
+
+#[event]
 pub struct WithdrawSolEvent {
     pub to: Pubkey,
     pub amount: u64,
@@ -542,4 +656,23 @@ pub struct WithdrawSolEvent {
 pub struct WithdrawDoneTokenEvent {
     pub to: Pubkey,
     pub amount_done: u64,
+}
+
+#[event]
+pub struct SetPercent {
+    pub percent: u64,
+}
+
+#[event]
+pub struct VaultSolInitialized {}
+
+#[event]
+pub struct VaultDoneTokenInitialized {}
+
+#[event] 
+pub struct OwnerInitialized {}
+
+#[event]
+pub struct Hello {
+    pub msg: String,
 }
