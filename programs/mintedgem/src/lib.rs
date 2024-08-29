@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+mod constants;
 mod errors;
 mod events;
 mod instructions;
@@ -7,7 +8,7 @@ mod state;
 
 use instructions::*;
 
-declare_id!("CdMkddBBv9zdB33UErvhzqH4XcZ3ZSxrBxY72Qo1vyUV");
+declare_id!("p4oawzVcmB9BSTKtDjRNhgbR4qFdHufnz5Zft2wNBF5");
 
 #[program]
 pub mod mintedgem {
@@ -25,12 +26,12 @@ pub mod mintedgem {
         init_vault_done_token::process(ctx)
     }
 
-    pub fn transfer_sol_in(ctx: Context<TransferSolCtx>, amount: u64) -> Result<()> {
-        transfer_sol_in::process(ctx, amount)
+    pub fn deposit_sol(ctx: Context<TransferSolCtx>, amount: u64) -> Result<()> {
+        deposit_sol::process(ctx, amount)
     }
 
-    pub fn transfer_done_token_in(ctx: Context<TransferTokenCtx>, amount: u64) -> Result<()> {
-        transfer_done_token_in::process(ctx, amount)
+    pub fn deposit_done_token(ctx: Context<TransferTokenCtx>, amount: u64) -> Result<()> {
+        deposit_done_token::process(ctx, amount)
     }
 
     pub fn create_payment(

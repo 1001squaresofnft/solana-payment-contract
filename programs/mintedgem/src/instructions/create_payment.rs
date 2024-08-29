@@ -1,9 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-use anchor_spl::token;
+use anchor_spl::{token::{
+    Token, Mint,  TokenAccount, Transfer, transfer 
+}, associated_token::AssociatedToken};
 
 use crate::{
-    errors::Errors,
+    constants::{ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_SOL_VOLUME, VAULT_SOL, VAULT_TOKEN},
+    errors::CustomErrors,
     events::CreatePaymentEvent,
     state::{Master, ItemPayment, TransctionSolVolume, VaultSol},
 };
@@ -14,60 +17,67 @@ pub struct CreatePaymentContext<'info> {
     #[account(
         init,
         payer = signer,
-        seeds = [b"item_payment", item_id.to_le_bytes().as_ref()],
+        seeds = [ITEM_PAYMENT, item_id.to_le_bytes().as_ref()],
         bump,
-        space = 8 + std::mem::size_of::<ItemPayment>(),
+        space = 8 + ItemPayment::INIT_SPACE,
     )]
     item_payment: Account<'info, ItemPayment>,
 
     #[account(
         init_if_needed,
         payer = signer,
-        seeds = [b"transaction_sol_volume", signer.key().as_ref()],
+        seeds = [TRANSACTION_SOL_VOLUME, signer.key().as_ref()],
         bump,
-        space = 8 + std::mem::size_of::<TransctionSolVolume>(),
+        space = 8 + TransctionSolVolume::INIT_SPACE,
     )]
     transaction_sol_volume: Account<'info, TransctionSolVolume>,
 
     #[account(
         mut, 
-        seeds = [b"master"],
+        seeds = [MASTER],
         bump,
     )]
     master: Account<'info, Master>,
 
+    #[account(
+        mut,
+        seeds = [VAULT_SOL],
+        bump
+    )]
+    vault_sol: Account<'info, VaultSol>,
+
+    mint_of_token_being_sent: Account<'info, Mint>,
     /// CHECK
     #[account(mut,
-        seeds=[b"token_account_owner"],
+        seeds=[TOKEN_ACCOUNT_OWNER],
         bump
     )]
     token_account_owner_pda: AccountInfo<'info>,
-
     #[account(
         mut,
-        seeds = [b"vault_token", mint_of_token_being_sent.key().as_ref()],
-        bump
+        seeds = [VAULT_TOKEN, mint_of_token_being_sent.key().as_ref()],
+        bump,
+        token::mint = mint_of_token_being_sent,
+        token::authority = token_account_owner_pda,
     )]
-    vault_token: Account<'info, token::TokenAccount>,
-    #[account(mut)]
-    sender_token_account: Account<'info, token::TokenAccount>,
-    mint_of_token_being_sent: Account<'info, token::Mint>,
+    vault_token: Account<'info, TokenAccount>,
+    #[account(
+        init_if_needed,
+        payer = signer,
+        associated_token::mint = mint_of_token_being_sent,
+        associated_token::authority = signer,
+    )]
+    sender_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     signer: Signer<'info>,
     system_program: Program<'info, System>,
-    token_program: Program<'info, token::Token>,
+    token_program: Program<'info, Token>,
+    associated_token_program: Program<'info, AssociatedToken>,
     rent: Sysvar<'info, Rent>,
-
-    #[account(
-        mut,
-        seeds = [b"vault_sol"],
-        bump
-    )]
-    vault_sol: Account<'info, VaultSol>,
 }
 
-pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64) -> Result<()> {
+pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u64) -> Result<()> {
     let master = &ctx.accounts.master;
     let item_payment = &mut ctx.accounts.item_payment;
     let transaction_sol_volume = &mut ctx.accounts.transaction_sol_volume;
@@ -80,31 +90,31 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64
             to: ctx.accounts.vault_sol.to_account_info().clone(),
         },
     );
-    system_program::transfer(cpi_context, amount_sol)?;
+    system_program::transfer(cpi_context, _amount_sol)?;
 
     // create item payment
-    item_payment.amount = amount_sol;
     item_payment.creator = ctx.accounts.signer.key();
+    item_payment.amount = _amount_sol;
     item_payment.amount_done = 0;
     // update transaction sol volume
-    transaction_sol_volume.amount += amount_sol;
     transaction_sol_volume.creator = ctx.accounts.signer.key();
+    transaction_sol_volume.amount += _amount_sol;
 
     // check balance & transfer done token out
-    let amount_done_token_out = (amount_sol * master.percent * 100) / 10000;
+    let amount_done_token_out = (_amount_sol * master.percent * 100) / 10000;
 
     if ctx.accounts.vault_token.amount < amount_done_token_out {
-        return Err(Errors::DeoDuSoDu.into());
+        return Err(CustomErrors::InsufficientAmount.into());
     }
 
-    let transfer_instruction = token::Transfer {
+    let transfer_instruction = Transfer {
         from: ctx.accounts.vault_token.to_account_info(),
         to: ctx.accounts.sender_token_account.to_account_info(),
         authority: ctx.accounts.token_account_owner_pda.to_account_info(),
     };
 
     let bump = ctx.bumps.token_account_owner_pda;
-    let seeds = &[b"token_account_owner".as_ref(), &[bump]];
+    let seeds = &[TOKEN_ACCOUNT_OWNER.as_ref(), &[bump]];
     let signer = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
@@ -113,11 +123,12 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64
         signer,
     );
 
-    anchor_spl::token::transfer(cpi_ctx, amount_done_token_out)?;
+    transfer(cpi_ctx, amount_done_token_out)?;
 
     emit!(CreatePaymentEvent {
+        signer: ctx.accounts.signer.key(),
         item_id: item_id,
-        amount: amount_sol,
+        amount: _amount_sol,
     });
 
     Ok(())

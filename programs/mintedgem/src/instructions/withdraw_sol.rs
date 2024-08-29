@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    errors::Errors,
+    constants::{MASTER, VAULT_SOL},
+    errors::CustomErrors,
     events::WithdrawSolEvent,
     state::{Master, VaultSol},
 };
@@ -10,14 +11,14 @@ use crate::{
 pub struct WithdrawSolCtx<'info> {
     #[account(
         mut,
-        seeds = [b"master"],
+        seeds = [MASTER],
         bump
     )]
     master: Account<'info, Master>,
 
     #[account(
         mut,
-        seeds = [b"vault_sol"],
+        seeds = [VAULT_SOL],
         bump
     )]
     vault_sol: Account<'info, VaultSol>,
@@ -28,25 +29,29 @@ pub struct WithdrawSolCtx<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn process(ctx: Context<WithdrawSolCtx>, amount_sol: u64) -> Result<()> {
+pub fn process(ctx: Context<WithdrawSolCtx>, _amount_sol: u64) -> Result<()> {
     let vault_sol = &ctx.accounts.vault_sol;
 
     require_keys_eq!(
         ctx.accounts.master.owner,
         ctx.accounts.signer.key(),
-        Errors::NotOwner
+        CustomErrors::NotOwner
     );
 
-    if vault_sol.to_account_info().lamports() < amount_sol {
-        return Err(Errors::DeoDuSoDu.into());
+    if _amount_sol <= 0 {
+        return Err(CustomErrors::InvalidAmount.into());
     }
 
-    ctx.accounts.vault_sol.sub_lamports(amount_sol)?;
-    ctx.accounts.signer.add_lamports(amount_sol)?;
+    if vault_sol.to_account_info().lamports() < _amount_sol {
+        return Err(CustomErrors::InsufficientAmount.into());
+    }
+
+    ctx.accounts.vault_sol.sub_lamports(_amount_sol)?;
+    ctx.accounts.signer.add_lamports(_amount_sol)?;
 
     emit!(WithdrawSolEvent {
         to: ctx.accounts.signer.key(),
-        amount: amount_sol,
+        amount: _amount_sol,
     });
 
     Ok(())

@@ -1,17 +1,17 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    errors::Errors,
-    events::VaultSolInitialized,
-    state::Master,
-    state::VaultSol,
+    constants::{MASTER, VAULT_SOL}, 
+    errors::CustomErrors, 
+    events::VaultSolInitialized, 
+    state::{Master, VaultSol}
 };
 
 #[derive(Accounts)]
 pub struct InitVaultSolCtx<'info> {
     #[account(
         mut, 
-        seeds = [b"master"],
+        seeds = [MASTER],
         bump,
     )]
     master: Account<'info, Master>,
@@ -19,9 +19,9 @@ pub struct InitVaultSolCtx<'info> {
     #[account(
         init, 
         payer = signer,
-        seeds = [b"vault_sol"],
+        seeds = [VAULT_SOL],
         bump,
-        space = 8 + std::mem::size_of::<VaultSol>(),
+        space = 8 + VaultSol::INIT_SPACE,
     )]
     vault_sol: Account<'info, VaultSol>,
 
@@ -33,10 +33,10 @@ pub struct InitVaultSolCtx<'info> {
 
 pub fn process(ctx: Context<InitVaultSolCtx>) -> Result<()> {
         
-    require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), Errors::NotOwner);
+    require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), CustomErrors::NotOwner);
 
     if ctx.accounts.master.is_vault_sol_initialized {
-        return Err(Errors::VaultSolAlreadyInitialized.into());
+        return Err(CustomErrors::VaultSolAlreadyInitialized.into());
     }
 
     ctx.accounts.master.is_vault_sol_initialized = true;

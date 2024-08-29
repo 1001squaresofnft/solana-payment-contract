@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    errors::Errors,
+    constants::MASTER,
+    errors::CustomErrors,
     events::OwnerInitialized,
     state::Master,
 };
@@ -11,9 +12,9 @@ pub struct InitializeCtx<'info> {
     #[account(
         init, 
         payer = signer,
-        seeds = [b"master"],
+        seeds = [MASTER],
         bump,
-        space = 8 + std::mem::size_of::<Master>(),
+        space = 8 + Master::INIT_SPACE,
     )]
     master: Account<'info, Master>,
 
@@ -23,16 +24,20 @@ pub struct InitializeCtx<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn process(ctx: Context<InitializeCtx>, percent: u64) -> Result<()> {
+pub fn process(ctx: Context<InitializeCtx>, _percent: u64) -> Result<()> {
     let master = &mut ctx.accounts.master;
 
     if master.is_initialized {
-        return Err(Errors::MasterAccountAlreadyInitialized.into());
+        return Err(CustomErrors::MasterAccountAlreadyInitialized.into());
+    }
+
+    if _percent <= 0 {
+        return Err(CustomErrors::InvalidPercent.into());
     }
 
     master.is_initialized = true;
     master.owner = ctx.accounts.signer.key();
-    master.percent = percent;
+    master.percent = _percent;
 
     emit!(OwnerInitialized {});
 
