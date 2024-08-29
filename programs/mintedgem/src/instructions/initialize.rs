@@ -31,10 +31,6 @@ pub fn process(ctx: Context<InitializeCtx>, _percent: u64) -> Result<()> {
         return Err(CustomErrors::MasterAccountAlreadyInitialized.into());
     }
 
-    if _percent <= 0 {
-        return Err(CustomErrors::InvalidPercent.into());
-    }
-
     master.is_initialized = true;
     master.owner = ctx.accounts.signer.key();
     master.percent = _percent;

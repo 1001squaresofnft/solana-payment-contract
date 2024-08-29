@@ -14,7 +14,7 @@ mintedgem = "p4oawzVcmB9BSTKtDjRNhgbR4qFdHufnz5Zft2wNBF5"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/Users/lainhathoang/.config/solana/id.json"
 
 [scripts]
