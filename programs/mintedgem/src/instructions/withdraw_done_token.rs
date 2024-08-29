@@ -1,9 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 
-use crate::states::master::Master;
-use crate::errors::Errors;
-use crate::WithdrawDoneTokenEvent;
+use crate::{
+    errors::Errors,
+    events::WithdrawDoneTokenEvent,
+    state::Master,
+};
 
 #[derive(Accounts)]
 pub struct WithdrawDoneTokenCtx<'info> {

@@ -1,8 +1,10 @@
 use anchor_lang::prelude::*;
 
-use crate::states::{master::Master, vault_sol::VaultSol};
-use crate::errors::Errors;
-use crate::WithdrawSolEvent;
+use crate::{
+    errors::Errors,
+    events::WithdrawSolEvent,
+    state::{Master, VaultSol},
+};
 
 #[derive(Accounts)]
 pub struct WithdrawSolCtx<'info> {

@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 
-use crate::states::master::Master;
-
-use crate::DepositDoneTokenEvent;
+use crate::{
+    events::DepositDoneTokenEvent,
+    state::Master,
+};
 
 #[derive(Accounts)]
 pub struct TransferTokenCtx<'info> {

@@ -1,9 +1,11 @@
 use anchor_lang::prelude::*;
 
-use crate::states::master::Master;
-use crate::states::vault_sol::VaultSol;
-use crate::errors::Errors;
-use crate::VaultSolInitialized;
+use crate::{
+    errors::Errors,
+    events::VaultSolInitialized,
+    state::Master,
+    state::VaultSol,
+};
 
 #[derive(Accounts)]
 pub struct InitVaultSolCtx<'info> {

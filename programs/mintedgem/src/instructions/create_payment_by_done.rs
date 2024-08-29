@@ -1,11 +1,13 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 
-use crate::errors::Errors;
-use crate::states::{
-    item_payment::ItemPayment, transaction_done_token_volume::TransactionDoneTokenVolume,
+use crate::{
+    errors::Errors,
+    events::CreatePaymentByDoneEvent,
+    state::{
+        ItemPayment, TransactionDoneTokenVolume,
+    },
 };
-use crate::CreatePaymentByDoneEvent;
 
 #[derive(Accounts)]
 #[instruction(item_id: u64)]

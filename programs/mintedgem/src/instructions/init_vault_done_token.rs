@@ -1,9 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 
-use crate::states::master::Master;
-use crate::errors::Errors;
-use crate::VaultDoneTokenInitialized;
+use crate::{
+    errors::Errors,
+    events::VaultDoneTokenInitialized,
+    state::Master,
+};
 
 #[derive(Accounts)]
 pub struct InitVaultDoneTokenCtx<'info> {

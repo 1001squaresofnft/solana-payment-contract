@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
-use crate::states::master::Master;
-use crate::states::vault_sol::VaultSol;
-
-use crate::DepositSolEvent;
+use crate::{
+    events::DepositSolEvent,
+    state::Master,
+    state::VaultSol,
+};
 
 #[derive(Accounts)]
 pub struct TransferSolCtx<'info> {

@@ -1,8 +1,10 @@
 use anchor_lang::prelude::*;
 
-use crate::states::master::Master;
-use crate::errors::Errors;
-use crate::OwnerInitialized;
+use crate::{
+    errors::Errors,
+    events::OwnerInitialized,
+    state::Master,
+};
 
 #[derive(Accounts)]
 pub struct InitializeCtx<'info> {

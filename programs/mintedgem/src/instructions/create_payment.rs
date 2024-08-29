@@ -2,10 +2,11 @@ use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 use anchor_spl::token;
 
-use crate::states::{master::Master, item_payment::ItemPayment, vault_sol::VaultSol, transaction_sol_volume::TransctionSolVolume};
-
-use crate::errors::Errors;
-use crate::CreatePaymentEvent;
+use crate::{
+    errors::Errors,
+    events::CreatePaymentEvent,
+    state::{Master, ItemPayment, TransctionSolVolume, VaultSol},
+};
 
 #[derive(Accounts)]
 #[instruction(item_id: u64)]

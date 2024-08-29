@@ -1,9 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::states::master::Master;
-
-use crate::errors::Errors;
-use crate::SetPercent;
+use crate::{errors::Errors, events::SetPercent, state::Master};
 
 #[derive(Accounts)]
 pub struct SetPercentCtx<'info> {
