@@ -9,6 +9,9 @@ mod deposit_done_token;
 mod deposit_sol;
 mod create_payment_by_done;
 mod create_payment;
+mod init_sender_ata;
+mod init_tx_sol_volume;
+mod init_tx_done_token_volume;
 
 pub use hello::*;
 pub use owner_initialized::*;
@@ -21,3 +24,6 @@ pub use deposit_done_token::*;
 pub use deposit_sol::*;
 pub use create_payment_by_done::*;
 pub use create_payment::*;
+pub use init_sender_ata::*;
+pub use init_tx_sol_volume::*;
+pub use init_tx_done_token_volume::*;

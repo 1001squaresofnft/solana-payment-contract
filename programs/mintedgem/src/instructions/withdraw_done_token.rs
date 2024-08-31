@@ -26,7 +26,6 @@ pub struct WithdrawDoneTokenCtx<'info> {
         bump
     )]
     token_account_owner_pda: AccountInfo<'info>,
-
     #[account(
         mut,
         seeds = [VAULT_TOKEN, mint_of_token_being_sent.key().as_ref()],

@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-use anchor_spl::{token::{
+use anchor_spl::token::{
     Token, Mint,  TokenAccount, Transfer, transfer 
-}, associated_token::AssociatedToken};
+};
 
 use crate::{
     constants::{ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_SOL_VOLUME, VAULT_SOL, VAULT_TOKEN},
@@ -15,6 +15,13 @@ use crate::{
 #[instruction(item_id: u64)]
 pub struct CreatePaymentContext<'info> {
     #[account(
+        mut, 
+        seeds = [MASTER],
+        bump,
+    )]
+    master: Account<'info, Master>,
+
+    #[account(
         init,
         payer = signer,
         seeds = [ITEM_PAYMENT, item_id.to_le_bytes().as_ref()],
@@ -24,20 +31,11 @@ pub struct CreatePaymentContext<'info> {
     item_payment: Account<'info, ItemPayment>,
 
     #[account(
-        init_if_needed,
-        payer = signer,
+        mut,
         seeds = [TRANSACTION_SOL_VOLUME, signer.key().as_ref()],
         bump,
-        space = 8 + TransctionSolVolume::INIT_SPACE,
     )]
     transaction_sol_volume: Account<'info, TransctionSolVolume>,
-
-    #[account(
-        mut, 
-        seeds = [MASTER],
-        bump,
-    )]
-    master: Account<'info, Master>,
 
     #[account(
         mut,
@@ -48,7 +46,8 @@ pub struct CreatePaymentContext<'info> {
 
     mint_of_token_being_sent: Account<'info, Mint>,
     /// CHECK
-    #[account(mut,
+    #[account(
+        mut,
         seeds=[TOKEN_ACCOUNT_OWNER],
         bump
     )]
@@ -62,8 +61,7 @@ pub struct CreatePaymentContext<'info> {
     )]
     vault_token: Account<'info, TokenAccount>,
     #[account(
-        init_if_needed,
-        payer = signer,
+        mut,
         associated_token::mint = mint_of_token_being_sent,
         associated_token::authority = signer,
     )]
@@ -73,12 +71,12 @@ pub struct CreatePaymentContext<'info> {
     signer: Signer<'info>,
     system_program: Program<'info, System>,
     token_program: Program<'info, Token>,
-    associated_token_program: Program<'info, AssociatedToken>,
     rent: Sysvar<'info, Rent>,
 }
 
 pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u64) -> Result<()> {
     let master = &ctx.accounts.master;
+    let mint_of_token_being_sent = &ctx.accounts.mint_of_token_being_sent;
     let item_payment = &mut ctx.accounts.item_payment;
     let transaction_sol_volume = &mut ctx.accounts.transaction_sol_volume;
 
@@ -102,6 +100,7 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
 
     // check balance & transfer done token out
     let amount_done_token_out = (_amount_sol * master.percent * 100) / 10000;
+    let amount_done_token_out = amount_done_token_out / (10u64.pow(9 as u32) / 10u64.pow(mint_of_token_being_sent.decimals as u32));
 
     if ctx.accounts.vault_token.amount < amount_done_token_out {
         return Err(CustomErrors::InsufficientAmount.into());

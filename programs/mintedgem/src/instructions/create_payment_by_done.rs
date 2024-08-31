@@ -33,7 +33,8 @@ pub struct CreatePaymentByDoneCtx<'info> {
 
     mint_of_token_being_sent: Account<'info, Mint>,
     /// CHECK
-    #[account(mut,
+    #[account(
+        mut,
         seeds=[TOKEN_ACCOUNT_OWNER],
         bump
     )]
