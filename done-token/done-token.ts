@@ -12,6 +12,7 @@ import {
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { web3 } from "@coral-xyz/anchor";
 import fs from "fs";
+import { setAuthority } from "@solana/spl-token";
 
 // yarn add @metaplex-foundation/umi @metaplex-foundation/mpl-token-metadata @metaplex-foundation/umi-bundle-defaults
 export function loadWalletKey(keyPairFile: string): web3.Keypair {
@@ -60,6 +61,7 @@ createAndMint(umi, {
   amount: 1_000_000_001_000000,
   tokenOwner: userWallet.publicKey,
   tokenStandard: TokenStandard.Fungible,
+  isMutable: true,
 })
   .sendAndConfirm(umi)
   .then(() => {
@@ -75,4 +77,4 @@ createAndMint(umi, {
 // spl-token authorize token_mint_addresss mint --disable
 // spl-token authorize token_mint_address freeze --disable
 //
-// i.e: DONE Token Devnet: https://explorer.solana.com/address/HquuCnHKvtWfFouzgdmm27p2cbswRHajWYtLjzPnK9oi?cluster=devnet
+// i.e: DONE Token Devnet: https://explorer.solana.com/address/CrCCBF3AodLAoutbFZbGWbJxsNgXtmvZUixwBtVoRCVd?cluster=devnet
