@@ -12,7 +12,6 @@ import {
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { web3 } from "@coral-xyz/anchor";
 import fs from "fs";
-import { setAuthority } from "@solana/spl-token";
 
 // yarn add @metaplex-foundation/umi @metaplex-foundation/mpl-token-metadata @metaplex-foundation/umi-bundle-defaults
 export function loadWalletKey(keyPairFile: string): web3.Keypair {
