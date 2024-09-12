@@ -51,7 +51,7 @@ umi.use(mplTokenMetadata());
 // CREATE & MINT
 createAndMint(umi, {
   mint,
-  authority: null,
+  authority: umi.identity,
   name: metadata.name,
   symbol: metadata.symbol,
   uri: metadata.uri,
