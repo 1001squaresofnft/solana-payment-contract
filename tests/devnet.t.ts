@@ -27,12 +27,12 @@ import { randomInt } from "crypto";
 
   // ================== DECLARE PROGRAM ID & DONE token==================
   const programId = new anchor.web3.PublicKey(
-    "Dwtw4KSge4DxAnfiknpfvG6kFneFhsaYjkrqjEqvx1GR" // 9
+    "7vFW6zPUtfgctuwyDgij12NkC9Cgi2R6YExqgXU5tLCp" // 9
   );
 
   const doneTokenMint = await spl.getMint(
     connection,
-    new anchor.web3.PublicKey("4c2s4aHFXt2mgsnivX5oD1ZU5L5FsM7xQ9KbW6p8HGxK") // 9
+    new anchor.web3.PublicKey("B7dAybb6wM33GL5d2kuHDnPPre3KTxMWSfd7GwZpr6XX") // 9
   );
 
   // ================== CREATE PROGRAM ==================
@@ -262,14 +262,15 @@ import { randomInt } from "crypto";
   // ================== SEND TX ==================
   try {
     const tx = new anchor.web3.Transaction().add(
-      // initMasterIx,
-      // initVaultSolIx,
-      // initVaultDoneTokenIx,
+      // helloIx,
+      initMasterIx,
+      initVaultSolIx,
+      initVaultDoneTokenIx,
       // depositSolIx,
-      // depositDoneTokenIx,
-      initSenderAta,
-      initTxSolVolumeIx,
-      createPaymentBySolIx
+      depositDoneTokenIx,
+      // initSenderAta,
+      // initTxSolVolumeIx,
+      // createPaymentBySolIx
       // initTxDoneTokenvolumeIx,
       // createPaymentByDoneTokenIx
     );
