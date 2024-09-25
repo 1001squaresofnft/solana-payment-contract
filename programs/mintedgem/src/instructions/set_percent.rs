@@ -17,6 +17,8 @@ pub struct SetPercentCtx<'info> {
 }
 
 pub fn process(ctx: Context<SetPercentCtx>, percent: u64) -> Result<()> {
+    require!(percent <= 100, CustomErrors::InvalidPercent);
+
     require_keys_eq!(
         ctx.accounts.master.owner,
         ctx.accounts.signer.key(),

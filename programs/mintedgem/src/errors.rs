@@ -26,6 +26,9 @@ pub enum CustomErrors {
     #[msg("Mintedgem: Amount must be greater than 0")]
     InvalidAmount,
 
-    #[msg("Mintedgem: Percent must be grater or equal 0")]
+    #[msg("Mintedgem: Percent must be greater thean or equal 0 and less than or equal 100")]
     InvalidPercent,
+
+    #[msg("Mintedgem: Invalid creator")]
+    InvalidCreator,
 }

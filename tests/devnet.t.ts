@@ -27,12 +27,12 @@ import { randomInt } from "crypto";
 
   // ================== DECLARE PROGRAM ID & DONE token==================
   const programId = new anchor.web3.PublicKey(
-    "7vFW6zPUtfgctuwyDgij12NkC9Cgi2R6YExqgXU5tLCp" // 9
+    "U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK" // 9
   );
 
   const doneTokenMint = await spl.getMint(
     connection,
-    new anchor.web3.PublicKey("B7dAybb6wM33GL5d2kuHDnPPre3KTxMWSfd7GwZpr6XX") // 9
+    new anchor.web3.PublicKey("B7dAybb6wM33GL5d2kuHDnPPre3KTxMWSfd7GwZpr6XX") 
   );
 
   // ================== CREATE PROGRAM ==================
@@ -195,7 +195,7 @@ import { randomInt } from "crypto";
   console.log("randomNumber: ", randomNumber);
   const itemId = new anchor.BN(randomNumber);
   const amountSolCreatePayment = new anchor.BN(
-    5 * anchor.web3.LAMPORTS_PER_SOL
+    0.1 * anchor.web3.LAMPORTS_PER_SOL
   );
   const [itemPayment] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("item_payment"), itemId.toArrayLike(Buffer, "le", 8)],

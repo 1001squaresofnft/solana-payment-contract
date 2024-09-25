@@ -5,10 +5,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-mintedgem = "Dwtw4KSge4DxAnfiknpfvG6kFneFhsaYjkrqjEqvx1GR"
+mintedgem = "U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK"
 
 [programs.devnet]
-mintedgem = "Dwtw4KSge4DxAnfiknpfvG6kFneFhsaYjkrqjEqvx1GR"
+mintedgem = "U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK"
 
 [registry]
 url = "https://api.apr.dev"

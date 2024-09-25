@@ -22,7 +22,7 @@ pub struct CreatePaymentContext<'info> {
     master: Account<'info, Master>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = signer,
         seeds = [ITEM_PAYMENT, item_id.to_le_bytes().as_ref()],
         bump,
@@ -31,9 +31,11 @@ pub struct CreatePaymentContext<'info> {
     item_payment: Account<'info, ItemPayment>,
 
     #[account(
-        mut,
+        init_if_needed,
+        payer = signer,
         seeds = [TRANSACTION_SOL_VOLUME, signer.key().as_ref()],
         bump,
+        space = 8 + TransctionSolVolume::INIT_SPACE,
     )]
     transaction_sol_volume: Account<'info, TransctionSolVolume>,
 
@@ -90,10 +92,13 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
     );
     system_program::transfer(cpi_context, _amount_sol)?;
 
+    if item_payment.creator != Pubkey::default() {
+        require_keys_eq!(item_payment.creator, ctx.accounts.signer.key(), CustomErrors::InvalidCreator);
+    }
+
     // create item payment
     item_payment.creator = ctx.accounts.signer.key();
     item_payment.amount = _amount_sol;
-    item_payment.amount_done = 0;
     // update transaction sol volume
     transaction_sol_volume.creator = ctx.accounts.signer.key();
     transaction_sol_volume.amount += _amount_sol;

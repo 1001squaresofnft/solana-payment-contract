@@ -14,7 +14,7 @@ use crate::{
 #[instruction(item_id: u64)]
 pub struct CreatePaymentByDoneCtx<'info> {
     #[account(
-        init,
+        init_if_needed,
         payer = signer,
         seeds = [ITEM_PAYMENT_BY_DONE, item_id.to_le_bytes().as_ref()],
         bump,
@@ -92,10 +92,17 @@ pub fn process(
 
     transfer(cpi_ctx, _amount_done)?;
 
+    if item_payment.creator != Pubkey::default() {
+        require_keys_eq!(
+            item_payment.creator,
+            ctx.accounts.signer.key(),
+            CustomErrors::InvalidCreator
+        );
+    }
+
     // create item payment
     item_payment.creator = ctx.accounts.signer.key();
     item_payment.amount_done = _amount_done;
-    item_payment.amount = 0;
     // update transaction done token volume
     transaction_done_token_volume.creator = ctx.accounts.signer.key();
     transaction_done_token_volume.amount += _amount_done;

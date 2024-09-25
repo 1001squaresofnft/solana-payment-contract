@@ -25,6 +25,8 @@ pub struct InitializeCtx<'info> {
 }
 
 pub fn process(ctx: Context<InitializeCtx>, _percent: u64) -> Result<()> {
+    require!(_percent <= 100, CustomErrors::InvalidPercent);
+
     let master = &mut ctx.accounts.master;
 
     if master.is_initialized {
