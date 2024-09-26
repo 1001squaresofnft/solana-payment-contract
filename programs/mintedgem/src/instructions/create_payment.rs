@@ -108,7 +108,7 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
     transaction_sol_volume.amount += _amount_sol;
 
     // check balance & transfer done token out
-    let amount_done_token_out = (_amount_sol * master.percent * 100) / 10000;
+    let amount_done_token_out = (_amount_sol * u64::from(master.percent)) / 10000;
     let amount_done_token_out = amount_done_token_out
         / (10u64.pow(9) / 10u64.pow(mint_of_token_being_sent.decimals.into()));
 

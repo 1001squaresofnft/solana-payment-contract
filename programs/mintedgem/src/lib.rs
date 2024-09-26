@@ -14,7 +14,7 @@ declare_id!("U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK");
 pub mod mintedgem {
     use super::*;
 
-    pub fn initialize(ctx: Context<InitializeCtx>, percent: u64) -> Result<()> {
+    pub fn initialize(ctx: Context<InitializeCtx>, percent: u16) -> Result<()> {
         initialize::process(ctx, percent)
     }
 
@@ -42,7 +42,7 @@ pub mod mintedgem {
         withdraw_done_token::process(ctx, amount_done)
     }
 
-    pub fn set_percent(ctx: Context<SetPercentCtx>, percent: u64) -> Result<()> {
+    pub fn set_percent(ctx: Context<SetPercentCtx>, percent: u16) -> Result<()> {
         set_percent::process(ctx, percent)
     }
 

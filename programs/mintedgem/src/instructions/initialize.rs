@@ -24,8 +24,8 @@ pub struct InitializeCtx<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn process(ctx: Context<InitializeCtx>, _percent: u64) -> Result<()> {
-    require!(_percent <= 100, CustomErrors::InvalidPercent);
+pub fn process(ctx: Context<InitializeCtx>, _percent: u16) -> Result<()> {
+    require!(_percent <= 10000, CustomErrors::InvalidPercent);
 
     let master = &mut ctx.accounts.master;
 
