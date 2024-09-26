@@ -14,7 +14,7 @@ declare_id!("U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK");
 pub mod mintedgem {
     use super::*;
 
-    pub fn initialize(ctx: Context<InitializeCtx>, percent: u64) -> Result<()> {
+    pub fn initialize(ctx: Context<InitializeCtx>, percent: u16) -> Result<()> {
         initialize::process(ctx, percent)
     }
 
@@ -26,11 +26,11 @@ pub mod mintedgem {
         init_vault_done_token::process(ctx)
     }
 
-    pub fn deposit_sol(ctx: Context<TransferSolCtx>, amount: u64) -> Result<()> {
+    pub fn deposit_sol(ctx: Context<DepositSolCtx>, amount: u64) -> Result<()> {
         deposit_sol::process(ctx, amount)
     }
 
-    pub fn deposit_done_token(ctx: Context<TransferTokenCtx>, amount: u64) -> Result<()> {
+    pub fn deposit_done_token(ctx: Context<DepositDoneCtx>, amount: u64) -> Result<()> {
         deposit_done_token::process(ctx, amount)
     }
 
@@ -42,7 +42,7 @@ pub mod mintedgem {
         withdraw_done_token::process(ctx, amount_done)
     }
 
-    pub fn set_percent(ctx: Context<SetPercentCtx>, percent: u64) -> Result<()> {
+    pub fn set_percent(ctx: Context<SetPercentCtx>, percent: u16) -> Result<()> {
         set_percent::process(ctx, percent)
     }
 
@@ -66,15 +66,13 @@ pub mod mintedgem {
         init_tx_sol_volume::process(ctx)
     }
 
-    pub fn init_tx_done_token_volume(ctx: Context<InitTransactionDoneTokenVolumeCtx>) -> Result<()> {
+    pub fn init_tx_done_token_volume(
+        ctx: Context<InitTransactionDoneTokenVolumeCtx>,
+    ) -> Result<()> {
         init_tx_done_token_volume::process(ctx)
     }
 
     pub fn init_sender_ata(ctx: Context<InitSenderAtaCtx>) -> Result<()> {
         init_sender_ata::process(ctx)
-    }
-
-    pub fn hello(ctx: Context<HelloCtx>) -> Result<()> {
-        hello::hello(ctx)
     }
 }

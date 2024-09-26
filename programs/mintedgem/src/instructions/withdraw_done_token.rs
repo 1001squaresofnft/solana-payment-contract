@@ -54,7 +54,7 @@ pub fn process(ctx: Context<WithdrawDoneTokenCtx>, _amount_done: u64) -> Result<
         CustomErrors::NotOwner
     );
 
-    if _amount_done <= 0 {
+    if _amount_done == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
 
@@ -69,7 +69,7 @@ pub fn process(ctx: Context<WithdrawDoneTokenCtx>, _amount_done: u64) -> Result<
     };
 
     let bump = ctx.bumps.token_account_owner_pda;
-    let seeds = &[TOKEN_ACCOUNT_OWNER.as_ref(), &[bump]];
+    let seeds = &[TOKEN_ACCOUNT_OWNER, &[bump]];
     let signer = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(

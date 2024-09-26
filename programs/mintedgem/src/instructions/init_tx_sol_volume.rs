@@ -1,9 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::TRANSACTION_SOL_VOLUME,
-    state::TransctionSolVolume,
-    events::InitTxSolVolume,
+    constants::TRANSACTION_SOL_VOLUME, events::InitTxSolVolume, state::TransactionSolVolume,
 };
 
 #[derive(Accounts)]
@@ -13,9 +11,9 @@ pub struct InitTransactionSolVolumeCtx<'info> {
         payer = signer,
         seeds = [TRANSACTION_SOL_VOLUME, signer.key().as_ref()],
         bump,
-        space = 8 + TransctionSolVolume::INIT_SPACE,
+        space = 8 + TransactionSolVolume::INIT_SPACE,
     )]
-    transaction_sol_volume: Account<'info, TransctionSolVolume>,
+    transaction_sol_volume: Account<'info, TransactionSolVolume>,
 
     #[account(mut)]
     signer: Signer<'info>,
@@ -28,4 +26,3 @@ pub fn process(ctx: Context<InitTransactionSolVolumeCtx>) -> Result<()> {
     });
     Ok(())
 }
-

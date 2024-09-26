@@ -38,7 +38,7 @@ pub fn process(ctx: Context<WithdrawSolCtx>, _amount_sol: u64) -> Result<()> {
         CustomErrors::NotOwner
     );
 
-    if _amount_sol <= 0 {
+    if _amount_sol == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
 

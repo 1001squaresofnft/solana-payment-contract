@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct TransferTokenCtx<'info> {
+pub struct DepositDoneCtx<'info> {
     #[account(
         mut, 
         seeds = [MASTER],
@@ -48,8 +48,8 @@ pub struct TransferTokenCtx<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn process(ctx: Context<TransferTokenCtx>, _amount: u64) -> Result<()> {
-        if _amount <= 0 {
+pub fn process(ctx: Context<DepositDoneCtx>, _amount: u64) -> Result<()> {
+        if _amount == 0 {
             return Err(CustomErrors::InvalidAmount.into());
         }
 

@@ -1,6 +1,4 @@
-use anchor_lang::prelude::*;
-use anchor_lang::system_program;
-
+use anchor_lang::{prelude::*, system_program::{transfer, Transfer}};
 use crate::{
     constants::{MASTER, VAULT_SOL},
     errors::CustomErrors,
@@ -10,7 +8,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct TransferSolCtx<'info> {
+pub struct DepositSolCtx<'info> {
     #[account(
         mut, 
         seeds = [MASTER],
@@ -30,23 +28,27 @@ pub struct TransferSolCtx<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn process(ctx: Context<TransferSolCtx>, _amount: u64) -> Result<()> {
-    if _amount <= 0 {
+pub fn process(ctx: Context<DepositSolCtx>, amount_sol: u64) -> Result<()> {
+    let vault_sol = &ctx.accounts.vault_sol;
+    let signer = &ctx.accounts.signer;
+    let system_program = &ctx.accounts.system_program;
+
+    if amount_sol == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
 
     let cpi_context = CpiContext::new(
-        ctx.accounts.system_program.to_account_info(),
-        system_program::Transfer {
-            from: ctx.accounts.signer.to_account_info().clone(),
-            to: ctx.accounts.vault_sol.to_account_info().clone(),
+        system_program.to_account_info(),
+        Transfer {
+            from: signer.to_account_info(),
+            to: vault_sol.to_account_info(),
         },
     );
-    system_program::transfer(cpi_context, _amount)?;
+    transfer(cpi_context, amount_sol)?;
 
     emit!(DepositSolEvent {
-        depositor: ctx.accounts.signer.key(),
-        amount: _amount,
+        depositor: signer.key(),
+        amount: amount_sol,
     });
 
     Ok(())

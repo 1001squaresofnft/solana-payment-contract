@@ -32,7 +32,7 @@ import { randomInt } from "crypto";
 
   const doneTokenMint = await spl.getMint(
     connection,
-    new anchor.web3.PublicKey("B7dAybb6wM33GL5d2kuHDnPPre3KTxMWSfd7GwZpr6XX") 
+    new anchor.web3.PublicKey("B7dAybb6wM33GL5d2kuHDnPPre3KTxMWSfd7GwZpr6XX")
   );
 
   // ================== CREATE PROGRAM ==================
@@ -72,9 +72,9 @@ import { randomInt } from "crypto";
 
   // ================== create INSTRUCTIONs ==================
   // ====== 1. hello
-  const helloIx = await program.methods.hello().instruction();
+  // const helloIx = await program.methods.hello().instruction();
   // ====== 2. init MASTER
-  const percent = new anchor.BN(50);
+  const percent = 9900; // 100_00 ~ 100%, 10_00 ~ 10%
   const initMasterIx = await program.methods
     .initialize(percent)
     .accounts({
@@ -108,7 +108,7 @@ import { randomInt } from "crypto";
     })
     .instruction();
   // ====== 5. deposit SOL
-  const amountSol = new anchor.BN(0.5 * anchor.web3.LAMPORTS_PER_SOL);
+  const amountSol = new anchor.BN(0.1 * anchor.web3.LAMPORTS_PER_SOL);
   console.log("amountSol: ", amountSol.toNumber());
   const depositSolIx = await program.methods
     .depositSol(amountSol)
@@ -138,7 +138,7 @@ import { randomInt } from "crypto";
     })
     .instruction();
   // ===== 7. withdraw SOL
-  const amountSolWithdraw = new anchor.BN(0.1 * anchor.web3.LAMPORTS_PER_SOL);
+  const amountSolWithdraw = new anchor.BN(3 * anchor.web3.LAMPORTS_PER_SOL);
   const withdrawSolIx = await program.methods
     .withdrawSol(amountSolWithdraw)
     .accounts({
@@ -195,7 +195,7 @@ import { randomInt } from "crypto";
   console.log("randomNumber: ", randomNumber);
   const itemId = new anchor.BN(randomNumber);
   const amountSolCreatePayment = new anchor.BN(
-    0.1 * anchor.web3.LAMPORTS_PER_SOL
+    1 * anchor.web3.LAMPORTS_PER_SOL
   );
   const [itemPayment] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from("item_payment"), itemId.toArrayLike(Buffer, "le", 8)],
@@ -258,21 +258,44 @@ import { randomInt } from "crypto";
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .instruction();
+  // ===== 11 Set percent
+  const newPercent = 9900;
+  const setPercentIx = await program.methods
+    .setPercent(newPercent)
+    .accounts({
+      master,
+      signer: wallet.publicKey,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .instruction();
 
   // ================== SEND TX ==================
   try {
     const tx = new anchor.web3.Transaction().add(
-      // helloIx,
-      initMasterIx,
-      initVaultSolIx,
-      initVaultDoneTokenIx,
+      // ===== INIT MASTER & VAULTS
+      // initMasterIx,
+      // initVaultSolIx,
+      // initVaultDoneTokenIx,
+
+      // ===== DEPOSIT
       // depositSolIx,
-      depositDoneTokenIx,
+      // depositDoneTokenIx
+
+      // ===== WITHDRAW
+      // withdrawSolIx,
+      // withdrawDoneTokenIx,
+
+      // ===== CREATE PAYMENT 
       // initSenderAta,
       // initTxSolVolumeIx,
       // createPaymentBySolIx
+
+      // ===== CREATE PAYMENT BY DONE
       // initTxDoneTokenvolumeIx,
-      // createPaymentByDoneTokenIx
+      // createPaymentByDoneTokenIx,
+
+      // ===== SET PERCENT
+      // setPercentIx
     );
     const txLog = await anchor.web3.sendAndConfirmTransaction(connection, tx, [
       wallet.payer,
