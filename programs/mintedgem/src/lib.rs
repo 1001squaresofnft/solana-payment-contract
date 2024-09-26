@@ -26,11 +26,11 @@ pub mod mintedgem {
         init_vault_done_token::process(ctx)
     }
 
-    pub fn deposit_sol(ctx: Context<TransferSolCtx>, amount: u64) -> Result<()> {
+    pub fn deposit_sol(ctx: Context<DepositSolCtx>, amount: u64) -> Result<()> {
         deposit_sol::process(ctx, amount)
     }
 
-    pub fn deposit_done_token(ctx: Context<TransferTokenCtx>, amount: u64) -> Result<()> {
+    pub fn deposit_done_token(ctx: Context<DepositDoneCtx>, amount: u64) -> Result<()> {
         deposit_done_token::process(ctx, amount)
     }
 
@@ -66,15 +66,13 @@ pub mod mintedgem {
         init_tx_sol_volume::process(ctx)
     }
 
-    pub fn init_tx_done_token_volume(ctx: Context<InitTransactionDoneTokenVolumeCtx>) -> Result<()> {
+    pub fn init_tx_done_token_volume(
+        ctx: Context<InitTransactionDoneTokenVolumeCtx>,
+    ) -> Result<()> {
         init_tx_done_token_volume::process(ctx)
     }
 
     pub fn init_sender_ata(ctx: Context<InitSenderAtaCtx>) -> Result<()> {
         init_sender_ata::process(ctx)
-    }
-
-    pub fn hello(ctx: Context<HelloCtx>) -> Result<()> {
-        hello::hello(ctx)
     }
 }

@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-
 use crate::{
     constants::{MASTER, VAULT_SOL},
     errors::CustomErrors,
@@ -10,7 +9,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct TransferSolCtx<'info> {
+pub struct DepositSolCtx<'info> {
     #[account(
         mut, 
         seeds = [MASTER],
@@ -30,8 +29,8 @@ pub struct TransferSolCtx<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn process(ctx: Context<TransferSolCtx>, _amount: u64) -> Result<()> {
-    if _amount <= 0 {
+pub fn process(ctx: Context<DepositSolCtx>, _amount: u64) -> Result<()> {
+    if _amount == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
 

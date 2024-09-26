@@ -66,12 +66,11 @@ pub fn process(
     item_id: u64,
     _amount_done: u64,
 ) -> Result<()> {
-    // let master = &ctx.accounts.master;
     let item_payment = &mut ctx.accounts.item_payment;
     let transaction_done_token_volume = &mut ctx.accounts.transaction_done_token_volume;
 
     // check balance & transfer DONE token IN
-    if _amount_done <= 0 {
+    if _amount_done == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
 
@@ -109,7 +108,7 @@ pub fn process(
 
     emit!(CreatePaymentByDoneEvent {
         signer: ctx.accounts.signer.key(),
-        item_id: item_id,
+        item_id,
         amount_done: _amount_done,
     });
 

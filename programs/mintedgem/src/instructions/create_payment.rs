@@ -1,21 +1,21 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-use anchor_spl::token::{
-    Token, Mint,  TokenAccount, Transfer, transfer 
-};
+use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 
 use crate::{
-    constants::{ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_SOL_VOLUME, VAULT_SOL, VAULT_TOKEN},
+    constants::{
+        ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_SOL_VOLUME, VAULT_SOL, VAULT_TOKEN,
+    },
     errors::CustomErrors,
     events::CreatePaymentEvent,
-    state::{Master, ItemPayment, TransctionSolVolume, VaultSol},
+    state::{ItemPayment, Master, TransactionSolVolume, VaultSol},
 };
 
 #[derive(Accounts)]
 #[instruction(item_id: u64)]
 pub struct CreatePaymentContext<'info> {
     #[account(
-        mut, 
+        mut,
         seeds = [MASTER],
         bump,
     )]
@@ -35,9 +35,9 @@ pub struct CreatePaymentContext<'info> {
         payer = signer,
         seeds = [TRANSACTION_SOL_VOLUME, signer.key().as_ref()],
         bump,
-        space = 8 + TransctionSolVolume::INIT_SPACE,
+        space = 8 + TransactionSolVolume::INIT_SPACE,
     )]
-    transaction_sol_volume: Account<'info, TransctionSolVolume>,
+    transaction_sol_volume: Account<'info, TransactionSolVolume>,
 
     #[account(
         mut,
@@ -93,7 +93,11 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
     system_program::transfer(cpi_context, _amount_sol)?;
 
     if item_payment.creator != Pubkey::default() {
-        require_keys_eq!(item_payment.creator, ctx.accounts.signer.key(), CustomErrors::InvalidCreator);
+        require_keys_eq!(
+            item_payment.creator,
+            ctx.accounts.signer.key(),
+            CustomErrors::InvalidCreator
+        );
     }
 
     // create item payment
@@ -105,7 +109,8 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
 
     // check balance & transfer done token out
     let amount_done_token_out = (_amount_sol * master.percent * 100) / 10000;
-    let amount_done_token_out = amount_done_token_out / (10u64.pow(9 as u32) / 10u64.pow(mint_of_token_being_sent.decimals as u32));
+    let amount_done_token_out = amount_done_token_out
+        / (10u64.pow(9) / 10u64.pow(mint_of_token_being_sent.decimals.into()));
 
     if ctx.accounts.vault_token.amount < amount_done_token_out {
         return Err(CustomErrors::InsufficientAmount.into());
@@ -118,7 +123,7 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
     };
 
     let bump = ctx.bumps.token_account_owner_pda;
-    let seeds = &[TOKEN_ACCOUNT_OWNER.as_ref(), &[bump]];
+    let seeds = &[TOKEN_ACCOUNT_OWNER, &[bump]];
     let signer = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
@@ -131,7 +136,7 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
 
     emit!(CreatePaymentEvent {
         signer: ctx.accounts.signer.key(),
-        item_id: item_id,
+        item_id,
         amount: _amount_sol,
     });
 

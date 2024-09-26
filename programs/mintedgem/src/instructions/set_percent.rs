@@ -27,7 +27,7 @@ pub fn process(ctx: Context<SetPercentCtx>, percent: u64) -> Result<()> {
 
     ctx.accounts.master.percent = percent;
 
-    emit!(SetPercent { percent: percent });
+    emit!(SetPercent { percent });
 
     Ok(())
 }
