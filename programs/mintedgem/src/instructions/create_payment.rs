@@ -90,7 +90,11 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
             to: ctx.accounts.vault_sol.to_account_info().clone(),
         },
     );
-    system_program::transfer(cpi_context, _amount_sol)?;
+    let result = system_program::transfer(cpi_context, _amount_sol);
+
+    if result.is_err() {
+        return Err(CustomErrors::TransferFailed.into());
+    }
 
     if item_payment.creator != Pubkey::default() {
         require_keys_eq!(
@@ -132,7 +136,11 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u6
         signer,
     );
 
-    transfer(cpi_ctx, amount_done_token_out)?;
+    let result = transfer(cpi_ctx, amount_done_token_out);
+
+    if result.is_err() {
+        return Err(CustomErrors::TransferFailed.into());
+    }
 
     emit!(CreatePaymentEvent {
         signer: ctx.accounts.signer.key(),

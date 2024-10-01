@@ -89,7 +89,11 @@ pub fn process(
         transfer_instruction,
     );
 
-    transfer(cpi_ctx, _amount_done)?;
+    let result = transfer(cpi_ctx, _amount_done);
+
+    if result.is_err() {
+        return Err(CustomErrors::TransferFailed.into());
+    }
 
     if item_payment.creator != Pubkey::default() {
         require_keys_eq!(

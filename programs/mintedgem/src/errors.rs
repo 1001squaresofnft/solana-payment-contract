@@ -25,4 +25,7 @@ pub enum CustomErrors {
 
     #[msg("Mintedgem: Invalid creator")]
     InvalidCreator,
+
+    #[msg("Mintedgem: Transaction failed")]
+    TransferFailed,
 }

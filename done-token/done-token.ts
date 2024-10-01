@@ -10,36 +10,33 @@ import {
   mplTokenMetadata,
 } from "@metaplex-foundation/mpl-token-metadata";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { web3 } from "@coral-xyz/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import fs from "fs";
+import "dotenv/config";
+import { AuthorityType, setAuthority } from "@solana/spl-token";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 // yarn add @metaplex-foundation/umi @metaplex-foundation/mpl-token-metadata @metaplex-foundation/umi-bundle-defaults
-export function loadWalletKey(keyPairFile: string): web3.Keypair {
-  const kp = web3.Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync(keyPairFile, "utf-8")))
-  );
-  return kp;
-}
 
-const umi = createUmi(
-  "https://api.devnet.solana.com"
-  // "http://localhost:8899"
-);
+const umi = createUmi(process.env.RPC_URL!);
+const connection = new Connection(process.env.RPC_URL!);
 
-const userWallet = umi.eddsa.createKeypairFromSecretKey(
-  new Uint8Array(
-    JSON.parse(
-      fs.readFileSync("/Users/lainhathoang/.config/solana/id.json", "utf-8")
-    )
+const keypairWeb3 = anchor.web3.Keypair.fromSecretKey(
+  Uint8Array.from(
+    JSON.parse(fs.readFileSync(process.env.WALLET_PATH!, "utf-8"))
   )
 );
-const userWalletSigner = createSignerFromKeypair(umi, userWallet);
+const keypairUmi = umi.eddsa.createKeypairFromSecretKey(
+  new Uint8Array(JSON.parse(fs.readFileSync(process.env.WALLET_PATH!, "utf-8")))
+);
+const userWalletSigner = createSignerFromKeypair(umi, keypairUmi);
+const wallet = new anchor.Wallet(keypairWeb3);
 
 const metadata = {
   name: "DONE Token",
   symbol: "DONE",
   description: "$DONE token description",
-  uri: "https://gist.githubusercontent.com/lainhathoang/38463850b65881fcb1d073c4a8f223af/raw/b48a6b922ab14cd8547944cbff7ac3fc6f98d32a/done_token.json",
+  uri: "https://gray-capitalist-cephalopod-696.mypinata.cloud/ipfs/QmZ4A1Ym2eSsyx1NrseJe7PwCnhAL19e41Fk2XMXTejg1z",
 };
 
 const mint = generateSigner(umi);
@@ -48,32 +45,62 @@ umi.use(mplTokenMetadata());
 
 // const mint = publicKey("token_mint");
 
-// CREATE & MINT
-createAndMint(umi, {
-  mint,
-  authority: umi.identity,
-  name: metadata.name,
-  symbol: metadata.symbol,
-  uri: metadata.uri,
-  sellerFeeBasisPoints: percentAmount(0),
-  decimals: 6,
-  amount: 1_000_000_001_000000,
-  tokenOwner: userWallet.publicKey,
-  tokenStandard: TokenStandard.Fungible,
-  isMutable: true,
-})
-  .sendAndConfirm(umi)
-  .then(() => {
-    console.log("Successfully minted 1 million tokens (", mint.publicKey, ")");
+async function main() {
+  // CREATE & MINT
+  createAndMint(umi, {
+    mint,
+    authority: umi.identity,
+    name: metadata.name,
+    symbol: metadata.symbol,
+    uri: metadata.uri,
+    sellerFeeBasisPoints: percentAmount(0),
+    decimals: 9,
+    amount: 1001_000000,
+    tokenOwner: keypairUmi.publicKey,
+    tokenStandard: TokenStandard.Fungible,
+    isMutable: true,
   })
-  .catch((err) => {
-    console.error("Error minting tokens:", err);
-  });
+    .sendAndConfirm(umi)
+    .then(async () => {
+      console.log(
+        "Successfully minted 1001 DONE tokens (",
+        mint.publicKey,
+        ")"
+      );
 
-// AFTER CRATE THE TOKEN MINT & MINT 1.000.000.001 TOKENs
-// run the scripts below by the deployer's wallet
-//
-// spl-token authorize token_mint_addresss mint --disable
-// spl-token authorize token_mint_address freeze --disable
-//
-// i.e: DONE Token Devnet: https://explorer.solana.com/address/CrCCBF3AodLAoutbFZbGWbJxsNgXtmvZUixwBtVoRCVd?cluster=devnet
+      setAuthority(
+        connection,
+        keypairWeb3,
+        new PublicKey(mint.publicKey),
+        keypairWeb3.publicKey,
+        AuthorityType.MintTokens,
+        null 
+      )
+        .then(async (txId) => {
+          console.log("Mint authority set to null: ", txId);
+
+          setAuthority(
+            connection,
+            keypairWeb3,
+            new PublicKey(mint.publicKey),
+            keypairWeb3.publicKey,
+            AuthorityType.FreezeAccount,
+            null 
+          )
+            .then((txId) => {
+              console.log("Freeze authority set to null: ", txId);
+            })
+            .catch((err) => {
+              console.error("Error AuthorityType.FreezeAccount tokens: ", err);
+            });
+        })
+        .catch((err) => {
+          console.error("Error AuthorityType.MintTokens tokens: ", err);
+        });
+    })
+    .catch((err) => {
+      console.error("Error minting tokens: ", err);
+    });
+}
+
+main();

@@ -64,7 +64,11 @@ pub fn process(ctx: Context<DepositDoneCtx>, _amount: u64) -> Result<()> {
             transfer_instruction,
         );
     
-        transfer(cpi_ctx, _amount)?;
+        let result = transfer(cpi_ctx, _amount);
+
+        if result.is_err() {
+            return Err(CustomErrors::TransferFailed.into());
+        }
 
         emit!(DepositDoneTokenEvent {
             depositor: ctx.accounts.signer.key(),

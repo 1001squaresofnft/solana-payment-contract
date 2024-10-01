@@ -44,7 +44,12 @@ pub fn process(ctx: Context<DepositSolCtx>, amount_sol: u64) -> Result<()> {
             to: vault_sol.to_account_info(),
         },
     );
-    transfer(cpi_context, amount_sol)?;
+
+    let result = transfer(cpi_context, amount_sol);
+    
+    if result.is_err() {
+        return Err(CustomErrors::TransferFailed.into());
+    }
 
     emit!(DepositSolEvent {
         depositor: signer.key(),
