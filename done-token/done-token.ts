@@ -55,7 +55,7 @@ async function main() {
     uri: metadata.uri,
     sellerFeeBasisPoints: percentAmount(0),
     decimals: 9,
-    amount: 1001_000000,
+    amount: 1001_000000000,
     tokenOwner: keypairUmi.publicKey,
     tokenStandard: TokenStandard.Fungible,
     isMutable: true,
