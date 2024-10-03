@@ -27,7 +27,7 @@ import { randomInt } from "crypto";
 
   // ================== DECLARE PROGRAM ID & DONE token==================
   const programId = new anchor.web3.PublicKey(
-    "U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK" // 9
+    "2xXsPRb7AqDnrdTLirBksMK24S6pfnt2gj8i455UbB7D" // 9
   );
 
   const doneTokenMint = await spl.getMint(
@@ -72,11 +72,11 @@ import { randomInt } from "crypto";
 
   // ================== create INSTRUCTIONs ==================
   // ====== 1. hello
-  // const helloIx = await program.methods.hello().instruction();
+  const helloIx = await program.methods.hello().instruction();
   // ====== 2. init MASTER
   const percent = 9900; // 100_00 ~ 100%, 10_00 ~ 10%
   const initMasterIx = await program.methods
-    .initialize(percent)
+    .initialize(percent, percent)
     .accounts({
       master,
       signer: wallet.publicKey,
@@ -261,7 +261,7 @@ import { randomInt } from "crypto";
   // ===== 11 Set percent
   const newPercent = 9900;
   const setPercentIx = await program.methods
-    .setPercent(newPercent)
+    .setPercentPayWSol(newPercent)
     .accounts({
       master,
       signer: wallet.publicKey,
@@ -272,6 +272,8 @@ import { randomInt } from "crypto";
   // ================== SEND TX ==================
   try {
     const tx = new anchor.web3.Transaction().add(
+      helloIx,
+
       // ===== INIT MASTER & VAULTS
       // initMasterIx,
       // initVaultSolIx,

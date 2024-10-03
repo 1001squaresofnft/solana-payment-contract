@@ -8,6 +8,9 @@ pub enum CustomErrors {
     #[msg("Mintedgem: Insufficient amount")]
     InsufficientAmount,
 
+    #[msg("Mintedgem: User Insufficient amount")]
+    UserInsufficientAmount,
+
     #[msg("Mintedgem: Only owner can call this function!")]
     NotOwner,
 
@@ -28,4 +31,7 @@ pub enum CustomErrors {
 
     #[msg("Mintedgem: Transaction failed")]
     TransferFailed,
+
+    #[msg("Mintedgem: Transfer back failed")]
+    TransferBackFailed,
 }

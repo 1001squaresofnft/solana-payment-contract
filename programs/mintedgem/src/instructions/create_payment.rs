@@ -76,76 +76,95 @@ pub struct CreatePaymentContext<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, _amount_sol: u64) -> Result<()> {
+pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64) -> Result<()> {
     let master = &ctx.accounts.master;
     let mint_of_token_being_sent = &ctx.accounts.mint_of_token_being_sent;
+    let vault_sol = &mut ctx.accounts.vault_sol;
+    let vault_token = &mut ctx.accounts.vault_token;
+    let sender_token_account = &mut ctx.accounts.sender_token_account;
+    let token_account_owner_pda = &ctx.accounts.token_account_owner_pda;
     let item_payment = &mut ctx.accounts.item_payment;
     let transaction_sol_volume = &mut ctx.accounts.transaction_sol_volume;
+    let token_program = &ctx.accounts.token_program;
+    let system_program = &ctx.accounts.system_program;
+    let signer = &ctx.accounts.signer;
 
-    // transfer sol in
-    let cpi_context = CpiContext::new(
-        ctx.accounts.system_program.to_account_info(),
+    // 1. Check the amount_sol (in lamports)
+    // mus be greater than 0
+    if amount_sol == 0 {
+        return Err(CustomErrors::InvalidAmount.into());
+    }
+    // must be less than or equal to the amount user has
+    if amount_sol > signer.lamports() {
+        return Err(CustomErrors::UserInsufficientAmount.into());
+    }
+
+    // ===== 2. Make transaction
+    // 2.1 Transfer Sol in
+    let cpi_ctx = CpiContext::new(
+        system_program.to_account_info(),
         system_program::Transfer {
-            from: ctx.accounts.signer.to_account_info().clone(),
-            to: ctx.accounts.vault_sol.to_account_info().clone(),
+            from: signer.to_account_info(),
+            to: vault_sol.to_account_info(),
         },
     );
-    let result = system_program::transfer(cpi_context, _amount_sol);
+    let result = system_program::transfer(cpi_ctx, amount_sol);
 
     if result.is_err() {
         return Err(CustomErrors::TransferFailed.into());
     }
-
-    if item_payment.creator != Pubkey::default() {
-        require_keys_eq!(
-            item_payment.creator,
-            ctx.accounts.signer.key(),
-            CustomErrors::InvalidCreator
-        );
-    }
-
-    // create item payment
-    item_payment.creator = ctx.accounts.signer.key();
-    item_payment.amount = _amount_sol;
-    // update transaction sol volume
-    transaction_sol_volume.creator = ctx.accounts.signer.key();
-    transaction_sol_volume.amount += _amount_sol;
-
-    // check balance & transfer done token out
-    let amount_done_token_out = (_amount_sol * u64::from(master.percent)) / 10000;
+    // 2.2 send back DONE token to the sender
+    // Calculate the amount of DONE token user will get back
+    let amount_done_token_out = (amount_sol * u64::from(master.percent_pay_w_sol)) / 10000;
     let amount_done_token_out = amount_done_token_out
         / (10u64.pow(9) / 10u64.pow(mint_of_token_being_sent.decimals.into()));
-
-    if ctx.accounts.vault_token.amount < amount_done_token_out {
+    // Send back
+    if vault_token.amount < amount_done_token_out {
         return Err(CustomErrors::InsufficientAmount.into());
     }
 
     let transfer_instruction = Transfer {
-        from: ctx.accounts.vault_token.to_account_info(),
-        to: ctx.accounts.sender_token_account.to_account_info(),
-        authority: ctx.accounts.token_account_owner_pda.to_account_info(),
+        from: vault_token.to_account_info(),
+        to: sender_token_account.to_account_info(),
+        authority: token_account_owner_pda.to_account_info(),
     };
 
     let bump = ctx.bumps.token_account_owner_pda;
     let seeds = &[TOKEN_ACCOUNT_OWNER, &[bump]];
-    let signer = &[&seeds[..]];
+    let signer_seeds = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
-        ctx.accounts.token_program.to_account_info(),
+        token_program.to_account_info(),
         transfer_instruction,
-        signer,
+        signer_seeds,
     );
 
     let result = transfer(cpi_ctx, amount_done_token_out);
 
     if result.is_err() {
-        return Err(CustomErrors::TransferFailed.into());
+        return Err(CustomErrors::TransferBackFailed.into());
     }
 
+    // ===== 3. Update states
+    // check if item payment already created
+    if item_payment.creator != Pubkey::default() {
+        require_keys_eq!(
+            item_payment.creator,
+            signer.key(),
+            CustomErrors::InvalidCreator
+        );
+    }
+    // create item payment
+    item_payment.creator = signer.key();
+    item_payment.amount = amount_sol;
+    // update transaction sol volume
+    transaction_sol_volume.creator = signer.key();
+    transaction_sol_volume.amount += amount_sol;
+
     emit!(CreatePaymentEvent {
-        signer: ctx.accounts.signer.key(),
+        signer: signer.key(),
         item_id,
-        amount: _amount_sol,
+        amount: amount_sol,
     });
 
     Ok(())
