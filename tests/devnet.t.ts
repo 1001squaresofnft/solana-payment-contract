@@ -27,7 +27,7 @@ import { randomInt } from "crypto";
 
   // ================== DECLARE PROGRAM ID & DONE token==================
   const programId = new anchor.web3.PublicKey(
-    "2xXsPRb7AqDnrdTLirBksMK24S6pfnt2gj8i455UbB7D" // 9
+    "J8R1U1bkCXhpSBS3PnHtfVJAhmHDW538sNcJyTi7ejr5" // 9
   );
 
   const doneTokenMint = await spl.getMint(
@@ -72,7 +72,7 @@ import { randomInt } from "crypto";
 
   // ================== create INSTRUCTIONs ==================
   // ====== 1. hello
-  const helloIx = await program.methods.hello().instruction();
+  // const helloIx = await program.methods.hello().instruction();
   // ====== 2. init MASTER
   const percent = 9900; // 100_00 ~ 100%, 10_00 ~ 10%
   const initMasterIx = await program.methods
@@ -246,6 +246,7 @@ import { randomInt } from "crypto";
   const createPaymentByDoneTokenIx = await program.methods
     .createPaymentByDone(itemId, amountDoneTokenCreatePayment)
     .accounts({
+      master,
       itemPayment: itemPaymentByDone,
       transactionDoneTokenVolume,
       mintOfTokenBeingSent: doneTokenMint.address,
@@ -272,7 +273,7 @@ import { randomInt } from "crypto";
   // ================== SEND TX ==================
   try {
     const tx = new anchor.web3.Transaction().add(
-      helloIx,
+      // helloIx,
 
       // ===== INIT MASTER & VAULTS
       // initMasterIx,
@@ -293,8 +294,8 @@ import { randomInt } from "crypto";
       // createPaymentBySolIx
 
       // ===== CREATE PAYMENT BY DONE
-      // initTxDoneTokenvolumeIx,
-      // createPaymentByDoneTokenIx,
+      initTxDoneTokenvolumeIx,
+      createPaymentByDoneTokenIx,
 
       // ===== SET PERCENT
       // setPercentIx

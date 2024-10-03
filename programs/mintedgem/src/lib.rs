@@ -8,8 +8,7 @@ mod state;
 
 use instructions::*;
 
-// declare_id!("U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK");
-declare_id!("2xXsPRb7AqDnrdTLirBksMK24S6pfnt2gj8i455UbB7D");
+declare_id!("J8R1U1bkCXhpSBS3PnHtfVJAhmHDW538sNcJyTi7ejr5");
 
 #[program]
 pub mod mintedgem {
@@ -87,17 +86,4 @@ pub mod mintedgem {
         init_sender_ata::process(ctx)
     }
 
-    pub fn hello(_ctx: Context<HelloCtx>) -> Result<()> {
-        msg!("hello");
-        Ok(())
-    }
-    
-}
-
-
-#[derive(Accounts)]
-pub struct HelloCtx<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub system_program: Program<'info, System>,
 }
