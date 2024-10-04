@@ -27,7 +27,7 @@ import { randomInt } from "crypto";
 
   // ================== DECLARE PROGRAM ID & DONE token==================
   const programId = new anchor.web3.PublicKey(
-    "J8R1U1bkCXhpSBS3PnHtfVJAhmHDW538sNcJyTi7ejr5" // 9
+    "3J5E5qwi4FuFSebghed2HiV3uR76qp8YrVdgzRZwLycH" // 9
   );
 
   const doneTokenMint = await spl.getMint(
@@ -138,7 +138,7 @@ import { randomInt } from "crypto";
     })
     .instruction();
   // ===== 7. withdraw SOL
-  const amountSolWithdraw = new anchor.BN(3 * anchor.web3.LAMPORTS_PER_SOL);
+  const amountSolWithdraw = new anchor.BN(1 * anchor.web3.LAMPORTS_PER_SOL);
   const withdrawSolIx = await program.methods
     .withdrawSol(amountSolWithdraw)
     .accounts({
@@ -282,7 +282,7 @@ import { randomInt } from "crypto";
 
       // ===== DEPOSIT
       // depositSolIx,
-      // depositDoneTokenIx
+      // depositDoneTokenIx,
 
       // ===== WITHDRAW
       // withdrawSolIx,
@@ -294,8 +294,8 @@ import { randomInt } from "crypto";
       // createPaymentBySolIx
 
       // ===== CREATE PAYMENT BY DONE
-      initTxDoneTokenvolumeIx,
-      createPaymentByDoneTokenIx,
+      // initTxDoneTokenvolumeIx,
+      // createPaymentByDoneTokenIx,
 
       // ===== SET PERCENT
       // setPercentIx

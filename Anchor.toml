@@ -5,10 +5,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-mintedgem = "J8R1U1bkCXhpSBS3PnHtfVJAhmHDW538sNcJyTi7ejr5"
+mintedgem = "3J5E5qwi4FuFSebghed2HiV3uR76qp8YrVdgzRZwLycH"
 
 [programs.devnet]
-mintedgem = "J8R1U1bkCXhpSBS3PnHtfVJAhmHDW538sNcJyTi7ejr5"
+mintedgem = "3J5E5qwi4FuFSebghed2HiV3uR76qp8YrVdgzRZwLycH"
 
 [registry]
 url = "https://api.devnet.solana.com"
