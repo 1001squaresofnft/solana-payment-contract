@@ -25,17 +25,18 @@ pub struct InitializeCtx<'info> {
 }
 
 pub fn process(ctx: Context<InitializeCtx>, percent_pay_w_sol: u16, percent_pay_w_done_token: u16) -> Result<()> {
+    let master = &mut ctx.accounts.master;
+    let signer = &ctx.accounts.signer;
+
     require!(percent_pay_w_sol <= 10000, CustomErrors::InvalidPercent);
     require!(percent_pay_w_done_token<= 10000, CustomErrors::InvalidPercent);
-
-    let master = &mut ctx.accounts.master;
 
     if master.is_initialized {
         return Err(CustomErrors::MasterAccountAlreadyInitialized.into());
     }
 
     master.is_initialized = true;
-    master.owner = ctx.accounts.signer.key();
+    master.owner = signer.key();
     master.percent_pay_w_sol = percent_pay_w_sol;
     master.percent_pay_w_done_token = percent_pay_w_done_token;
 

@@ -47,14 +47,16 @@ pub struct InitVaultDoneTokenCtx<'info> {
 }
 
     pub fn process(ctx: Context<InitVaultDoneTokenCtx>) -> Result<()> {
+        let master = &mut ctx.accounts.master;
+        let signer = &ctx.accounts.signer;
 
-        require_keys_eq!(ctx.accounts.master.owner, ctx.accounts.signer.key(), CustomErrors::NotOwner);
+        require_keys_eq!(master.owner, signer.key(), CustomErrors::NotOwner);
 
-        if ctx.accounts.master.is_vault_done_token_initialized {
+        if master.is_vault_done_token_initialized {
             return Err(CustomErrors::VaultDoneTokenAlreadyInitialized.into());
         }
 
-        ctx.accounts.master.is_vault_done_token_initialized = true;
+        master.is_vault_done_token_initialized = true;
 
         emit!(VaultDoneTokenInitialized {});
 

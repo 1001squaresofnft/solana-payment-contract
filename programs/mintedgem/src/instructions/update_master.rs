@@ -52,7 +52,7 @@ pub fn set_percent_pay_w_done_token(
         CustomErrors::NotOwner
     );
 
-    ctx.accounts.master.percent_pay_w_sol = percent_pay_w_done_token;
+    ctx.accounts.master.percent_pay_w_done_token = percent_pay_w_done_token;
 
     emit!(SetPercentPayWDoneToken {
         percent_pay_w_done_token

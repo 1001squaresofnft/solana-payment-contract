@@ -29,29 +29,31 @@ pub struct WithdrawSolCtx<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn process(ctx: Context<WithdrawSolCtx>, _amount_sol: u64) -> Result<()> {
-    let vault_sol = &ctx.accounts.vault_sol;
+pub fn process(ctx: Context<WithdrawSolCtx>, amount_sol: u64) -> Result<()> {
+    let master = &ctx.accounts.master;
+    let signer = &mut ctx.accounts.signer;
+    let vault_sol = &mut ctx.accounts.vault_sol;
 
     require_keys_eq!(
-        ctx.accounts.master.owner,
-        ctx.accounts.signer.key(),
+        master.owner,
+        signer.key(),
         CustomErrors::NotOwner
     );
 
-    if _amount_sol == 0 {
+    if amount_sol == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
 
-    if vault_sol.to_account_info().lamports() < _amount_sol {
+    if vault_sol.to_account_info().lamports() < amount_sol {
         return Err(CustomErrors::InsufficientAmount.into());
     }
 
-    ctx.accounts.vault_sol.sub_lamports(_amount_sol)?;
-    ctx.accounts.signer.add_lamports(_amount_sol)?;
+    vault_sol.sub_lamports(amount_sol)?;
+    signer.add_lamports(amount_sol)?;
 
     emit!(WithdrawSolEvent {
-        to: ctx.accounts.signer.key(),
-        amount: _amount_sol,
+        to: signer.key(),
+        amount: amount_sol,
     });
 
     Ok(())
