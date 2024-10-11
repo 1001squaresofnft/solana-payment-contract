@@ -8,7 +8,7 @@ mod state;
 
 use instructions::*;
 
-declare_id!("6nJtHYi1D6Vcxq5PXdusDWpB8M9GACHosMdch3yJgh6d");
+declare_id!("GbuZ8rLAvahewUdLDxysgcndv3PP6N9gLZTSWtSQCZdv");
 
 #[program]
 pub mod mintedgem {

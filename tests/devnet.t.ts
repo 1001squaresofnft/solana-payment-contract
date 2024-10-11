@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import * as spl from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import * as fs from "fs";
 import idl from "../target/idl/mintedgem.json";
 import { Mintedgem } from "../target/types/mintedgem";
@@ -7,7 +7,8 @@ import { randomInt } from "crypto";
 
 (async function main() {
   const connection = new anchor.web3.Connection(
-    "https://api.devnet.solana.com"
+    anchor.web3.clusterApiUrl("devnet"),
+    "confirmed"
   );
 
   const keypair = anchor.web3.Keypair.fromSecretKey(
@@ -27,16 +28,16 @@ import { randomInt } from "crypto";
 
   // ================== DECLARE PROGRAM ID & DONE token==================
   const programId = new anchor.web3.PublicKey(
-    "6nJtHYi1D6Vcxq5PXdusDWpB8M9GACHosMdch3yJgh6d" // 9
+    "GbuZ8rLAvahewUdLDxysgcndv3PP6N9gLZTSWtSQCZdv" // 9
   );
 
-  const doneTokenMint = await spl.getMint(
+  const doneTokenMint = await getMint(
     connection,
     new anchor.web3.PublicKey("B7dAybb6wM33GL5d2kuHDnPPre3KTxMWSfd7GwZpr6XX")
   );
 
   // ================== CREATE PROGRAM ==================
-  const program = new anchor.Program(idl as Mintedgem, programId);
+  const program = new anchor.Program(idl as Mintedgem);
 
   // ================== GET ENTIRE THE PDAs ==================
   const [master] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -62,13 +63,11 @@ import { randomInt } from "crypto";
   const [senderTokenAccount] = anchor.web3.PublicKey.findProgramAddressSync(
     [
       wallet.publicKey.toBuffer(),
-      spl.TOKEN_PROGRAM_ID.toBuffer(),
+      TOKEN_PROGRAM_ID.toBuffer(),
       doneTokenMint.address.toBuffer(),
     ],
-    spl.ASSOCIATED_TOKEN_PROGRAM_ID
+    ASSOCIATED_TOKEN_PROGRAM_ID
   );
-
-  spl.getOrCreateAssociatedTokenAccount;
 
   // ================== create INSTRUCTIONs ==================
   // ====== 1. hello
@@ -77,15 +76,17 @@ import { randomInt } from "crypto";
   const percent = 9900; // 100_00 ~ 100%, 10_00 ~ 10%
   const initMasterIx = await program.methods
     .initialize(percent, percent)
-    .accounts({
+    .accountsStrict({
       master,
       signer: wallet.publicKey,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
     .instruction();
   // ===== 3. init vault SOL
   const initVaultSolIx = await program.methods
     .initVaultSol()
-    .accounts({
+    .accountsStrict({
       master,
       vaultSol,
       signer: wallet.publicKey,
@@ -96,14 +97,14 @@ import { randomInt } from "crypto";
   // ====== 4. init vault DONE Token
   const initVaultDoneTokenIx = await program.methods
     .initVaultDoneToken()
-    .accounts({
+    .accountsStrict({
       master,
       mintOfTokenBeingSent: doneTokenMint.address,
       tokenAccountOwnerPda: tokenAccountOwner,
       vaultToken,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: spl.TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .instruction();
@@ -112,7 +113,7 @@ import { randomInt } from "crypto";
   console.log("amountSol: ", amountSol.toNumber());
   const depositSolIx = await program.methods
     .depositSol(amountSol)
-    .accounts({
+    .accountsStrict({
       master,
       vaultSol,
       signer: wallet.publicKey,
@@ -125,7 +126,7 @@ import { randomInt } from "crypto";
   );
   const depositDoneTokenIx = await program.methods
     .depositDoneToken(amountDoneToken)
-    .accounts({
+    .accountsStrict({
       master,
       mintOfTokenBeingSent: doneTokenMint.address,
       tokenAccountOwnerPda: tokenAccountOwner,
@@ -133,7 +134,7 @@ import { randomInt } from "crypto";
       senderTokenAccount,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: spl.TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .instruction();
@@ -141,7 +142,7 @@ import { randomInt } from "crypto";
   const amountSolWithdraw = new anchor.BN(0.01 * anchor.web3.LAMPORTS_PER_SOL);
   const withdrawSolIx = await program.methods
     .withdrawSol(amountSolWithdraw)
-    .accounts({
+    .accountsStrict({
       master,
       vaultSol,
       signer: wallet.publicKey,
@@ -154,27 +155,27 @@ import { randomInt } from "crypto";
   );
   const withdrawDoneTokenIx = await program.methods
     .withdrawDoneToken(amountDoneTokenWithdraw)
-    .accounts({
+    .accountsStrict({
       master,
       mintOfTokenBeingSent: doneTokenMint.address,
       tokenAccountOwnerPda: tokenAccountOwner,
       vaultToken,
       senderTokenAccount,
       signer: wallet.publicKey,
-      tokenProgram: spl.TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .instruction();
   // ===== 9. Init sender Ata
   const initSenderAta = await program.methods
     .initSenderAta()
-    .accounts({
+    .accountsStrict({
       senderTokenAccount,
       signer: wallet.publicKey,
       mintOfTokenBeingSent: doneTokenMint.address,
       systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: spl.TOKEN_PROGRAM_ID,
-      associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
     })
     .instruction();
   // ===== 9.0 Init tx sol volume
@@ -184,7 +185,7 @@ import { randomInt } from "crypto";
   );
   const initTxSolVolumeIx = await program.methods
     .initTxSolVolume()
-    .accounts({
+    .accountsStrict({
       transactionSolVolume,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
@@ -203,7 +204,7 @@ import { randomInt } from "crypto";
   );
   const createPaymentBySolIx = await program.methods
     .createPayment(itemId, amountSolCreatePayment)
-    .accounts({
+    .accountsStrict({
       master,
       itemPayment,
       transactionSolVolume,
@@ -214,7 +215,7 @@ import { randomInt } from "crypto";
       senderTokenAccount,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: spl.TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .instruction();
@@ -229,7 +230,7 @@ import { randomInt } from "crypto";
     );
   const initTxDoneTokenvolumeIx = await program.methods
     .initTxDoneTokenVolume()
-    .accounts({
+    .accountsStrict({
       transactionDoneTokenVolume,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
@@ -245,7 +246,7 @@ import { randomInt } from "crypto";
   );
   const createPaymentByDoneTokenIx = await program.methods
     .createPaymentByDone(itemId, amountDoneTokenCreatePayment)
-    .accounts({
+    .accountsStrict({
       master,
       itemPayment: itemPaymentByDone,
       transactionDoneTokenVolume,
@@ -255,7 +256,7 @@ import { randomInt } from "crypto";
       senderTokenAccount,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: spl.TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .instruction();
@@ -264,7 +265,7 @@ import { randomInt } from "crypto";
   const newPercent = 9900;
   const setPercentSolIx = await program.methods
     .setPercentPayWSol(newPercent)
-    .accounts({
+    .accountsStrict({
       master,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
@@ -272,17 +273,18 @@ import { randomInt } from "crypto";
     .instruction();
   // 11.2 Pay with DONE token
   const setPercentDoneTokenIx = await program.methods
-  .setPercentPayWDoneToken(newPercent)
-  .accounts({
-    master,
-    signer: wallet.publicKey,
-    systemProgram: anchor.web3.SystemProgram.programId,
-  })
-  .instruction();
+    .setPercentPayWDoneToken(newPercent)
+    .accountsStrict({
+      master,
+      signer: wallet.publicKey,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .instruction();
 
   // ================== SEND TX ==================
   try {
-    const tx = new anchor.web3.Transaction().add(
+    const tx = new anchor.web3.Transaction()
+      .add(
       // helloIx,
 
       // ===== INIT MASTER & VAULTS
