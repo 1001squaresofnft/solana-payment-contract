@@ -8,7 +8,7 @@ pub mod init_tx_sol_volume;
 pub mod init_vault_done_token;
 pub mod init_vault_sol;
 pub mod initialize;
-pub mod set_percent;
+pub mod update_master;
 pub mod withdraw_done_token;
 pub mod withdraw_sol;
 
@@ -22,6 +22,6 @@ pub use init_tx_sol_volume::*;
 pub use init_vault_done_token::*;
 pub use init_vault_sol::*;
 pub use initialize::*;
-pub use set_percent::*;
+pub use update_master::*;
 pub use withdraw_done_token::*;
 pub use withdraw_sol::*;

@@ -8,14 +8,15 @@ mod state;
 
 use instructions::*;
 
-declare_id!("U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK");
+declare_id!("6nJtHYi1D6Vcxq5PXdusDWpB8M9GACHosMdch3yJgh6d");
 
 #[program]
 pub mod mintedgem {
     use super::*;
 
-    pub fn initialize(ctx: Context<InitializeCtx>, percent: u16) -> Result<()> {
-        initialize::process(ctx, percent)
+    // ADMIN FUNCTIONS
+    pub fn initialize(ctx: Context<InitializeCtx>, percent_pay_w_sol: u16, percent_pay_w_done_token: u16) -> Result<()> {
+        initialize::process(ctx, percent_pay_w_sol, percent_pay_w_done_token)
     }
 
     pub fn init_vault_sol(ctx: Context<InitVaultSolCtx>) -> Result<()> {
@@ -42,10 +43,19 @@ pub mod mintedgem {
         withdraw_done_token::process(ctx, amount_done)
     }
 
-    pub fn set_percent(ctx: Context<SetPercentCtx>, percent: u16) -> Result<()> {
-        set_percent::process(ctx, percent)
+    pub fn set_percent_pay_w_sol(ctx: Context<UpdateMasterCtx>, percent_pay_w_sol: u16) -> Result<()> {
+        update_master::set_percent_pay_w_sol(ctx, percent_pay_w_sol)
     }
 
+    pub fn set_percent_pay_w_done_token(ctx: Context<UpdateMasterCtx>, percent_pay_w_done_token: u16) -> Result<()> {
+        update_master::set_percent_pay_w_done_token(ctx, percent_pay_w_done_token)
+    }
+
+    pub fn set_owner(ctx: Context<UpdateMasterCtx>, new_owner: Pubkey) -> Result<()> {
+        update_master::set_owner(ctx, new_owner)
+    }
+
+    // USER FUNCTIONS   
     pub fn create_payment(
         ctx: Context<CreatePaymentContext>,
         item_id: u64,
@@ -75,4 +85,5 @@ pub mod mintedgem {
     pub fn init_sender_ata(ctx: Context<InitSenderAtaCtx>) -> Result<()> {
         init_sender_ata::process(ctx)
     }
+
 }

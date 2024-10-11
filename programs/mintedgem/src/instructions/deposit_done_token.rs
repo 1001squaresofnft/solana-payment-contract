@@ -48,31 +48,36 @@ pub struct DepositDoneCtx<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn process(ctx: Context<DepositDoneCtx>, _amount: u64) -> Result<()> {
-        if _amount == 0 {
+pub fn process(ctx: Context<DepositDoneCtx>, amount_done_token: u64) -> Result<()> {
+        let sender_token_account = &mut ctx.accounts.sender_token_account;
+        let vault_token = &mut ctx.accounts.vault_token;
+        let signer = &ctx.accounts.signer;
+        let token_program = &ctx.accounts.token_program;
+
+        if amount_done_token == 0 {
             return Err(CustomErrors::InvalidAmount.into());
         }
 
         let transfer_instruction = Transfer {
-            from: ctx.accounts.sender_token_account.to_account_info(),
-            to: ctx.accounts.vault_token.to_account_info(),
-            authority: ctx.accounts.signer.to_account_info(),
+            from: sender_token_account.to_account_info(),
+            to: vault_token.to_account_info(),
+            authority: signer.to_account_info(),
         };
     
         let cpi_ctx = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
+            token_program.to_account_info(),
             transfer_instruction,
         );
     
-        let result = transfer(cpi_ctx, _amount);
+        let result = transfer(cpi_ctx, amount_done_token);
 
         if result.is_err() {
             return Err(CustomErrors::TransferFailed.into());
         }
 
         emit!(DepositDoneTokenEvent {
-            depositor: ctx.accounts.signer.key(),
-            amount_done: _amount,
+            depositor: signer.key(),
+            amount_done: amount_done_token,
         });
 
         Ok(())

@@ -5,13 +5,13 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-mintedgem = "U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK"
+mintedgem = "6nJtHYi1D6Vcxq5PXdusDWpB8M9GACHosMdch3yJgh6d"
 
 [programs.devnet]
-mintedgem = "U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK"
+mintedgem = "6nJtHYi1D6Vcxq5PXdusDWpB8M9GACHosMdch3yJgh6d"
 
 [registry]
-url = "https://api.apr.dev"
+url = "https://api.devnet.solana.com"
 
 [provider]
 cluster = "devnet"

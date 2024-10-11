@@ -27,7 +27,7 @@ import { randomInt } from "crypto";
 
   // ================== DECLARE PROGRAM ID & DONE token==================
   const programId = new anchor.web3.PublicKey(
-    "U7VaMo8JX3QrifomrL33dunx5tiqDmJZenU6vx4WneK" // 9
+    "6nJtHYi1D6Vcxq5PXdusDWpB8M9GACHosMdch3yJgh6d" // 9
   );
 
   const doneTokenMint = await spl.getMint(
@@ -76,7 +76,7 @@ import { randomInt } from "crypto";
   // ====== 2. init MASTER
   const percent = 9900; // 100_00 ~ 100%, 10_00 ~ 10%
   const initMasterIx = await program.methods
-    .initialize(percent)
+    .initialize(percent, percent)
     .accounts({
       master,
       signer: wallet.publicKey,
@@ -138,7 +138,7 @@ import { randomInt } from "crypto";
     })
     .instruction();
   // ===== 7. withdraw SOL
-  const amountSolWithdraw = new anchor.BN(3 * anchor.web3.LAMPORTS_PER_SOL);
+  const amountSolWithdraw = new anchor.BN(0.01 * anchor.web3.LAMPORTS_PER_SOL);
   const withdrawSolIx = await program.methods
     .withdrawSol(amountSolWithdraw)
     .accounts({
@@ -150,7 +150,7 @@ import { randomInt } from "crypto";
     .instruction();
   // ===== 8. withdraw DONE Token
   const amountDoneTokenWithdraw = new anchor.BN(
-    1_000_000 * 10 ** doneTokenMint.decimals
+    500_000 * 10 ** doneTokenMint.decimals
   );
   const withdrawDoneTokenIx = await program.methods
     .withdrawDoneToken(amountDoneTokenWithdraw)
@@ -246,6 +246,7 @@ import { randomInt } from "crypto";
   const createPaymentByDoneTokenIx = await program.methods
     .createPaymentByDone(itemId, amountDoneTokenCreatePayment)
     .accounts({
+      master,
       itemPayment: itemPaymentByDone,
       transactionDoneTokenVolume,
       mintOfTokenBeingSent: doneTokenMint.address,
@@ -259,19 +260,31 @@ import { randomInt } from "crypto";
     })
     .instruction();
   // ===== 11 Set percent
+  // 11.2 Pay with Sol
   const newPercent = 9900;
-  const setPercentIx = await program.methods
-    .setPercent(newPercent)
+  const setPercentSolIx = await program.methods
+    .setPercentPayWSol(newPercent)
     .accounts({
       master,
       signer: wallet.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .instruction();
+  // 11.2 Pay with DONE token
+  const setPercentDoneTokenIx = await program.methods
+  .setPercentPayWDoneToken(newPercent)
+  .accounts({
+    master,
+    signer: wallet.publicKey,
+    systemProgram: anchor.web3.SystemProgram.programId,
+  })
+  .instruction();
 
   // ================== SEND TX ==================
   try {
     const tx = new anchor.web3.Transaction().add(
+      // helloIx,
+
       // ===== INIT MASTER & VAULTS
       // initMasterIx,
       // initVaultSolIx,
@@ -279,7 +292,7 @@ import { randomInt } from "crypto";
 
       // ===== DEPOSIT
       // depositSolIx,
-      // depositDoneTokenIx
+      // depositDoneTokenIx,
 
       // ===== WITHDRAW
       // withdrawSolIx,
@@ -295,7 +308,8 @@ import { randomInt } from "crypto";
       // createPaymentByDoneTokenIx,
 
       // ===== SET PERCENT
-      // setPercentIx
+      // setPercentSolIx,
+      // setPercentDoneTokenIx,
     );
     const txLog = await anchor.web3.sendAndConfirmTransaction(connection, tx, [
       wallet.payer,
@@ -304,4 +318,8 @@ import { randomInt } from "crypto";
   } catch (error) {
     console.log("=> error: ", error);
   }
+
+  // ===== GET MASTER DATA
+  // const masterPda = await program.account.master.fetch(master);
+  // console.log("masterPda: ", masterPda);
 })();

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{
-    Transfer, Token, Mint, TokenAccount
+    Transfer, Token, Mint, TokenAccount, transfer
 };
 
 use crate::{
@@ -47,42 +47,53 @@ pub struct WithdrawDoneTokenCtx<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn process(ctx: Context<WithdrawDoneTokenCtx>, _amount_done: u64) -> Result<()> {
+pub fn process(ctx: Context<WithdrawDoneTokenCtx>, amount_done: u64) -> Result<()> {
+    let master = &mut ctx.accounts.master;
+    let signer = &mut ctx.accounts.signer;
+    let vault_token = &mut ctx.accounts.vault_token;
+    let sender_token_account = &mut ctx.accounts.sender_token_account;
+    let token_account_owner_pda = &mut ctx.accounts.token_account_owner_pda;
+    let token_program = &mut ctx.accounts.token_program;
+
     require_keys_eq!(
-        ctx.accounts.master.owner,
-        ctx.accounts.signer.key(),
+        master.owner,
+        signer.key(),
         CustomErrors::NotOwner
     );
 
-    if _amount_done == 0 {
+    if amount_done == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
 
-    if ctx.accounts.vault_token.amount < _amount_done {
+    if vault_token.amount < amount_done {
         return Err(CustomErrors::InsufficientAmount.into());
     }
 
     let transfer_instruction = Transfer {
-        from: ctx.accounts.vault_token.to_account_info(),
-        to: ctx.accounts.sender_token_account.to_account_info(),
-        authority: ctx.accounts.token_account_owner_pda.to_account_info(),
+        from: vault_token.to_account_info(),
+        to: sender_token_account.to_account_info(),
+        authority: token_account_owner_pda.to_account_info(),
     };
 
     let bump = ctx.bumps.token_account_owner_pda;
     let seeds = &[TOKEN_ACCOUNT_OWNER, &[bump]];
-    let signer = &[&seeds[..]];
+    let signer_seeds = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
-        ctx.accounts.token_program.to_account_info(),
+        token_program.to_account_info(),
         transfer_instruction,
-        signer,
+        signer_seeds,
     );
 
-    anchor_spl::token::transfer(cpi_ctx, _amount_done)?;
+    let result = transfer(cpi_ctx, amount_done);
+
+    if result.is_err() {
+        return Err(CustomErrors::TransferFailed.into());
+    }
 
     emit!(WithdrawDoneTokenEvent {
-        to: ctx.accounts.signer.key(),
-        amount_done: _amount_done,
+        to: signer.key(),
+        amount_done: amount_done,
     });
 
     Ok(())
