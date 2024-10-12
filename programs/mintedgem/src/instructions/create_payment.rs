@@ -160,7 +160,7 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64
     }
     //
     // 2.2 Swap SOL to DONE token -> Send back DONE token to the sender (if percent_pay_w_sol > 0)
-    if amount_sol_swap > 0 {
+    if master.percent_pay_w_sol > 0 {
         let cpi_ctx = CpiContext::new(
             cp_swap_program.to_account_info(),
             Swap {
