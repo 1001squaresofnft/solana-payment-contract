@@ -34,4 +34,7 @@ pub enum CustomErrors {
 
     #[msg("Mintedgem: Transfer back failed")]
     TransferBackFailed,
+
+    #[msg("Mintedgem: CPI Swap failed")]
+    CPISwapFailed
 }

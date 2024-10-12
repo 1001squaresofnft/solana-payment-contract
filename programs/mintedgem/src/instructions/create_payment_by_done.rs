@@ -3,8 +3,7 @@ use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 
 use crate::{
     constants::{
-        ITEM_PAYMENT_BY_DONE, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_DONE_TOKEN_VOLUME,
-        VAULT_TOKEN,
+        ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_DONE_TOKEN_VOLUME, VAULT_TOKEN
     },
     errors::CustomErrors,
     events::CreatePaymentByDoneEvent,
@@ -24,7 +23,7 @@ pub struct CreatePaymentByDoneCtx<'info> {
     #[account(
         init_if_needed,
         payer = signer,
-        seeds = [ITEM_PAYMENT_BY_DONE, item_id.to_le_bytes().as_ref()],
+        seeds = [ITEM_PAYMENT, item_id.to_le_bytes().as_ref()],
         bump,
         space = 8 + ItemPayment::INIT_SPACE,
     )]
