@@ -133,8 +133,17 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64
     if amount_sol == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
-    let amount_sol_swap = (amount_sol * u64::from(master.percent_pay_w_sol)) / 10000;
-    let amount_sol_to_treasury = amount_sol - amount_sol_swap;
+
+    let amount_sol_swap;
+    let amount_sol_to_treasury;
+
+    if master.percent_pay_w_sol > 0 {
+        amount_sol_swap = (amount_sol * u64::from(master.percent_pay_w_sol)) / 10000;
+        amount_sol_to_treasury = amount_sol - amount_sol_swap;
+    } else {
+        amount_sol_swap = 0;
+        amount_sol_to_treasury = amount_sol;
+    }
 
     // ===== 2. Make transaction
     // 2.1 Transfer Sol to treasury
@@ -150,30 +159,32 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64
         return Err(CustomErrors::TransferFailed.into());
     }
     //
-    // 2.2 Swap SOL to DONE token -> Send back DONE token to the sender
-    let cpi_ctx = CpiContext::new(
-        cp_swap_program.to_account_info(),
-        Swap {
-            payer: signer.to_account_info(),
-            authority: authority.to_account_info(),
-            amm_config: amm_config.to_account_info(),
-            pool_state: pool_state.to_account_info(),
-            input_token_account: sender_wsol_ata.to_account_info(),
-            output_token_account: sender_done_token_ata.to_account_info(),
-            input_vault: input_vault.to_account_info(),
-            output_vault: output_vault.to_account_info(),
-            input_token_program: token_program.to_account_info(),
-            output_token_program: token_program.to_account_info(),
-            input_token_mint: wsol_mint.to_account_info(),
-            output_token_mint: done_token_mint.to_account_info(),
-            observation_state: observation_state.to_account_info(),
-        },
-    );
-    let result = swap_base_input(cpi_ctx, amount_sol_swap, 0);
-    if result.is_err() {
-        return Err(CustomErrors::CPISwapFailed.into());
+    // 2.2 Swap SOL to DONE token -> Send back DONE token to the sender (if percent_pay_w_sol > 0)
+    if amount_sol_swap > 0 {
+        let cpi_ctx = CpiContext::new(
+            cp_swap_program.to_account_info(),
+            Swap {
+                payer: signer.to_account_info(),
+                authority: authority.to_account_info(),
+                amm_config: amm_config.to_account_info(),
+                pool_state: pool_state.to_account_info(),
+                input_token_account: sender_wsol_ata.to_account_info(),
+                output_token_account: sender_done_token_ata.to_account_info(),
+                input_vault: input_vault.to_account_info(),
+                output_vault: output_vault.to_account_info(),
+                input_token_program: token_program.to_account_info(),
+                output_token_program: token_program.to_account_info(),
+                input_token_mint: wsol_mint.to_account_info(),
+                output_token_mint: done_token_mint.to_account_info(),
+                observation_state: observation_state.to_account_info(),
+            },
+        );
+        let result = swap_base_input(cpi_ctx, amount_sol_swap, 0);
+        if result.is_err() {
+            return Err(CustomErrors::CPISwapFailed.into());
+        }
+        ctx.accounts.sender_wsol_ata.reload()?;
     }
-    ctx.accounts.sender_wsol_ata.reload()?;
 
     // ===== 3. Update states
     // check if item payment already created

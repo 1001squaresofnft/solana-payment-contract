@@ -3,7 +3,7 @@ use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 
 use crate::{
     constants::{
-        ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_DONE_TOKEN_VOLUME, VAULT_TOKEN
+        ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_DONE_TOKEN_VOLUME, VAULT_TOKEN,
     },
     errors::CustomErrors,
     events::CreatePaymentByDoneEvent,
@@ -104,30 +104,33 @@ pub fn process(ctx: Context<CreatePaymentByDoneCtx>, item_id: u64, amount_done: 
     if result.is_err() {
         return Err(CustomErrors::TransferFailed.into());
     }
-    // 2.2 send back DONE token to the sender
+    // 2.2 send back DONE token to the sender (if percnet_pay_w_done_token > 0)
     // Calculate the amount of DONE token user will get back
-    let amount_done_token_out = (amount_done * u64::from(master.percent_pay_w_done_token)) / 10000;
-    // Send back
-    let transfer_instruction = Transfer {
-        from: vault_token.to_account_info(),
-        to: sender_token_account.to_account_info(),
-        authority: token_account_owner_pda.to_account_info(),
-    };
+    if master.percent_pay_w_done_token > 0 {
+        let amount_done_token_out =
+            (amount_done * u64::from(master.percent_pay_w_done_token)) / 10000;
+        // Send back
+        let transfer_instruction = Transfer {
+            from: vault_token.to_account_info(),
+            to: sender_token_account.to_account_info(),
+            authority: token_account_owner_pda.to_account_info(),
+        };
 
-    let bump = ctx.bumps.token_account_owner_pda;
-    let seeds = &[TOKEN_ACCOUNT_OWNER, &[bump]];
-    let signer_seeds = &[&seeds[..]];
+        let bump = ctx.bumps.token_account_owner_pda;
+        let seeds = &[TOKEN_ACCOUNT_OWNER, &[bump]];
+        let signer_seeds = &[&seeds[..]];
 
-    let cpi_ctx = CpiContext::new_with_signer(
-        token_program.to_account_info(),
-        transfer_instruction,
-        signer_seeds,
-    );
+        let cpi_ctx = CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            transfer_instruction,
+            signer_seeds,
+        );
 
-    let result = transfer(cpi_ctx, amount_done_token_out);
+        let result = transfer(cpi_ctx, amount_done_token_out);
 
-    if result.is_err() {
-        return Err(CustomErrors::TransferBackFailed.into());
+        if result.is_err() {
+            return Err(CustomErrors::TransferBackFailed.into());
+        }
     }
 
     // ===== 3. Update states

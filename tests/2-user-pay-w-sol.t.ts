@@ -53,7 +53,7 @@ import {
   console.log("randomNumber: ", randomNumber);
   const itemId = new anchor.BN(randomNumber);
   const amountSolCreatePayment = new anchor.BN(
-    1.222 * anchor.web3.LAMPORTS_PER_SOL
+    0.222 * anchor.web3.LAMPORTS_PER_SOL
   );
   //
   // ================== GET ENTIRE THE PDAs ==================
