@@ -30,11 +30,9 @@ pub struct CreatePaymentByDoneCtx<'info> {
     item_payment: Account<'info, ItemPayment>,
 
     #[account(
-        init_if_needed,
-        payer = signer,
+        mut,
         seeds = [TRANSACTION_DONE_TOKEN_VOLUME, signer.key().as_ref()],
         bump,
-        space = 8 + TransactionDoneTokenVolume::INIT_SPACE,
     )]
     transaction_done_token_volume: Account<'info, TransactionDoneTokenVolume>,
 

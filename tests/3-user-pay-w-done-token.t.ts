@@ -52,7 +52,7 @@ import {
   console.log("randomNumber: ", randomNumber);
   const itemId = new anchor.BN(randomNumber);
   const amountDoneTokenCreatePayment = new anchor.BN(
-    1.222 * 10 ** doneTokenMint.decimals
+    0.222 * 10 ** doneTokenMint.decimals
   );
   const [itemPayment] = getItemPayment(itemId);
   //
