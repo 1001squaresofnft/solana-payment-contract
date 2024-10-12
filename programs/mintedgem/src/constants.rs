@@ -8,7 +8,7 @@ pub const VAULT_TOKEN: &[u8] = b"vault_token";
 
 pub const ITEM_PAYMENT: &[u8] = b"item_payment";
 
-pub const ITEM_PAYMENT_BY_DONE: &[u8] = b"item_payment_by_done";
+// pub const ITEM_PAYMENT_BY_DONE: &[u8] = b"item_payment_by_done";
 
 pub const TRANSACTION_SOL_VOLUME: &[u8] = b"transaction_sol_volume";
 

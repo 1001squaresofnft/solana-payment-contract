@@ -1,14 +1,19 @@
-use anchor_lang::prelude::*;
-use anchor_lang::system_program;
-use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
-
 use crate::{
-    constants::{
-        ITEM_PAYMENT, MASTER, TOKEN_ACCOUNT_OWNER, TRANSACTION_SOL_VOLUME, VAULT_SOL, VAULT_TOKEN,
-    },
+    constants::{ITEM_PAYMENT, MASTER, TRANSACTION_SOL_VOLUME, VAULT_SOL},
     errors::CustomErrors,
     events::CreatePaymentEvent,
     state::{ItemPayment, Master, TransactionSolVolume, VaultSol},
+};
+use anchor_lang::prelude::*;
+use anchor_lang::system_program;
+use anchor_spl::{
+    token::Token,
+    token_interface::{Mint, TokenAccount},
+};
+use raydium_cp_swap::{
+    cpi::{accounts::Swap, swap_base_input},
+    program::RaydiumCpSwap,
+    states::{AmmConfig, ObservationState, PoolState},
 };
 
 #[derive(Accounts)]
@@ -31,76 +36,108 @@ pub struct CreatePaymentContext<'info> {
     item_payment: Account<'info, ItemPayment>,
 
     #[account(
-        init_if_needed,
-        payer = signer,
+        mut,
         seeds = [TRANSACTION_SOL_VOLUME, signer.key().as_ref()],
         bump,
-        space = 8 + TransactionSolVolume::INIT_SPACE,
     )]
-    transaction_sol_volume: Account<'info, TransactionSolVolume>,
+    transaction_sol_volume: Box<Account<'info, TransactionSolVolume>>,
 
     #[account(
         mut,
         seeds = [VAULT_SOL],
         bump
     )]
-    vault_sol: Account<'info, VaultSol>,
+    vault_sol: Box<Account<'info, VaultSol>>,
 
-    mint_of_token_being_sent: Account<'info, Mint>,
-    /// CHECK
+    wsol_mint: InterfaceAccount<'info, Mint>,
+    done_token_mint: InterfaceAccount<'info, Mint>,
+
+    /// The program account of the pool in which the swap will be performed
+    #[account(mut)]
+    pub pool_state: AccountLoader<'info, PoolState>,
+
     #[account(
         mut,
-        seeds=[TOKEN_ACCOUNT_OWNER],
-        bump
+        associated_token::mint = wsol_mint,
+        associated_token::authority = signer
     )]
-    token_account_owner_pda: AccountInfo<'info>,
+    sender_wsol_ata: InterfaceAccount<'info, TokenAccount>,
+
     #[account(
         mut,
-        seeds = [VAULT_TOKEN, mint_of_token_being_sent.key().as_ref()],
-        bump,
-        token::mint = mint_of_token_being_sent,
-        token::authority = token_account_owner_pda,
-    )]
-    vault_token: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        associated_token::mint = mint_of_token_being_sent,
+        associated_token::mint = done_token_mint,
         associated_token::authority = signer,
     )]
-    sender_token_account: Account<'info, TokenAccount>,
+    sender_done_token_ata: InterfaceAccount<'info, TokenAccount>,
+
+    /// CHECK: pool vault and lp mint authority
+    #[account(mut)]
+    pub authority: UncheckedAccount<'info>,
+
+    /// The factory state to read protocol fees
+    #[account(address = pool_state.load()?.amm_config)]
+    pub amm_config: Box<Account<'info, AmmConfig>>,
+
+    /// The vault token account for input token
+    #[account(
+        mut,
+        constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
+    )]
+    pub input_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// The vault token account for output token
+    #[account(
+        mut,
+        constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
+    )]
+    pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// The program account for the most recent oracle observation
+    #[account(mut, address = pool_state.load()?.observation_key)]
+    pub observation_state: AccountLoader<'info, ObservationState>,
+
+    pub cp_swap_program: Program<'info, RaydiumCpSwap>,
 
     #[account(mut)]
     signer: Signer<'info>,
+
     system_program: Program<'info, System>,
+
     token_program: Program<'info, Token>,
-    rent: Sysvar<'info, Rent>,
 }
 
 pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64) -> Result<()> {
     let master = &ctx.accounts.master;
-    let mint_of_token_being_sent = &ctx.accounts.mint_of_token_being_sent;
-    let vault_sol = &mut ctx.accounts.vault_sol;
-    let vault_token = &mut ctx.accounts.vault_token;
-    let sender_token_account = &mut ctx.accounts.sender_token_account;
-    let token_account_owner_pda = &ctx.accounts.token_account_owner_pda;
     let item_payment = &mut ctx.accounts.item_payment;
     let transaction_sol_volume = &mut ctx.accounts.transaction_sol_volume;
-    let token_program = &ctx.accounts.token_program;
-    let system_program = &ctx.accounts.system_program;
-    let signer = &ctx.accounts.signer;
+    let vault_sol = &ctx.accounts.vault_sol;
 
-    // 1. Check the amount_sol (in lamports)
+    let wsol_mint = &ctx.accounts.wsol_mint;
+    let done_token_mint = &ctx.accounts.done_token_mint;
+    let pool_state = &ctx.accounts.pool_state;
+    let sender_wsol_ata = &ctx.accounts.sender_wsol_ata;
+    let sender_done_token_ata = &ctx.accounts.sender_done_token_ata;
+    let authority = &ctx.accounts.authority;
+    let amm_config = &ctx.accounts.amm_config;
+    let input_vault = &ctx.accounts.input_vault;
+    let output_vault = &ctx.accounts.output_vault;
+    let observation_state = &ctx.accounts.observation_state;
+    let cp_swap_program = &ctx.accounts.cp_swap_program;
+
+    let signer = &ctx.accounts.signer;
+    let system_program = &ctx.accounts.system_program;
+    let token_program = &ctx.accounts.token_program;
+
+    // ====== 1. Check the amount_sol (in lamports)
     // mus be greater than 0
     if amount_sol == 0 {
         return Err(CustomErrors::InvalidAmount.into());
     }
-    // must be less than or equal to the amount user has
-    if amount_sol > signer.lamports() {
-        return Err(CustomErrors::UserInsufficientAmount.into());
-    }
+    let amount_sol_swap = (amount_sol * u64::from(master.percent_pay_w_sol)) / 10000;
+    let amount_sol_to_treasury = amount_sol - amount_sol_swap;
 
     // ===== 2. Make transaction
-    // 2.1 Transfer Sol in
+    // 2.1 Transfer Sol to treasury
     let cpi_ctx = CpiContext::new(
         system_program.to_account_info(),
         system_program::Transfer {
@@ -108,42 +145,35 @@ pub fn process(ctx: Context<CreatePaymentContext>, item_id: u64, amount_sol: u64
             to: vault_sol.to_account_info(),
         },
     );
-    let result = system_program::transfer(cpi_ctx, amount_sol);
-
+    let result = system_program::transfer(cpi_ctx, amount_sol_to_treasury);
     if result.is_err() {
         return Err(CustomErrors::TransferFailed.into());
     }
-    // 2.2 send back DONE token to the sender
-    // Calculate the amount of DONE token user will get back
-    let amount_done_token_out = (amount_sol * u64::from(master.percent_pay_w_sol)) / 10000;
-    let amount_done_token_out = amount_done_token_out
-        / (10u64.pow(9) / 10u64.pow(mint_of_token_being_sent.decimals.into()));
-    // Send back
-    if vault_token.amount < amount_done_token_out {
-        return Err(CustomErrors::InsufficientAmount.into());
-    }
-
-    let transfer_instruction = Transfer {
-        from: vault_token.to_account_info(),
-        to: sender_token_account.to_account_info(),
-        authority: token_account_owner_pda.to_account_info(),
-    };
-
-    let bump = ctx.bumps.token_account_owner_pda;
-    let seeds = &[TOKEN_ACCOUNT_OWNER, &[bump]];
-    let signer_seeds = &[&seeds[..]];
-
-    let cpi_ctx = CpiContext::new_with_signer(
-        token_program.to_account_info(),
-        transfer_instruction,
-        signer_seeds,
+    //
+    // 2.2 Swap SOL to DONE token -> Send back DONE token to the sender
+    let cpi_ctx = CpiContext::new(
+        cp_swap_program.to_account_info(),
+        Swap {
+            payer: signer.to_account_info(),
+            authority: authority.to_account_info(),
+            amm_config: amm_config.to_account_info(),
+            pool_state: pool_state.to_account_info(),
+            input_token_account: sender_wsol_ata.to_account_info(),
+            output_token_account: sender_done_token_ata.to_account_info(),
+            input_vault: input_vault.to_account_info(),
+            output_vault: output_vault.to_account_info(),
+            input_token_program: token_program.to_account_info(),
+            output_token_program: token_program.to_account_info(),
+            input_token_mint: wsol_mint.to_account_info(),
+            output_token_mint: done_token_mint.to_account_info(),
+            observation_state: observation_state.to_account_info(),
+        },
     );
-
-    let result = transfer(cpi_ctx, amount_done_token_out);
-
+    let result = swap_base_input(cpi_ctx, amount_sol_swap, 0);
     if result.is_err() {
-        return Err(CustomErrors::TransferBackFailed.into());
+        return Err(CustomErrors::CPISwapFailed.into());
     }
+    ctx.accounts.sender_wsol_ata.reload()?;
 
     // ===== 3. Update states
     // check if item payment already created

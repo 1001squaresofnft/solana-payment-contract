@@ -93,7 +93,7 @@ pub fn process(ctx: Context<WithdrawDoneTokenCtx>, amount_done: u64) -> Result<(
 
     emit!(WithdrawDoneTokenEvent {
         to: signer.key(),
-        amount_done: amount_done,
+        amount_done,
     });
 
     Ok(())
