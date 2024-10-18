@@ -33,6 +33,9 @@ import {
   const [vaultSol] = getVaultSol();
   const [tokenAccountOwner] = getTokenAccountOwner();
   const [vaultToken] = getVaultToken(doneTokenMint);
+
+  const accountInfo: any = await connection.getParsedAccountInfo(program.programId);
+  const mintedgemProgramData = new anchor.web3.PublicKey(accountInfo.value.data.parsed.info.programData);
   //
   // ================== create INSTRUCTIONs ==================
   // ============ 1. init MASTER
@@ -40,6 +43,8 @@ import {
     .initialize(PERCENT_PAY_W_SOL, PERCENT_W_DONE_TOKEN)
     .accountsStrict({
       master,
+      mintedgemProgram: program.programId,
+      mintedgemProgramData,
       signer: wallet.publicKey,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       systemProgram: anchor.web3.SystemProgram.programId,

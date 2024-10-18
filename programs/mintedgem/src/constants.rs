@@ -1,5 +1,3 @@
-use anchor_lang::{prelude::Pubkey, pubkey};
-
 pub const MASTER: &[u8] = b"master";
 
 pub const VAULT_SOL: &[u8] = b"vault_sol";
@@ -15,5 +13,3 @@ pub const ITEM_PAYMENT: &[u8] = b"item_payment";
 pub const TRANSACTION_SOL_VOLUME: &[u8] = b"transaction_sol_volume";
 
 pub const TRANSACTION_DONE_TOKEN_VOLUME: &[u8] = b"transaction_done_token_volume";
-
-pub const ADMIN_ADDRESS: Pubkey = pubkey!("2x2x35ihEkX2vZZkAhpFT6fYZ2rJ49wG97TBHsEX6J6x");

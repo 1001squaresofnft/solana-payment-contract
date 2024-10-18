@@ -14,6 +14,9 @@ pub enum CustomErrors {
     #[msg("Mintedgem: Invalid admin")]
     InvalidAdmin,
 
+    #[msg("Mintedgem: Invalid mindgem program")]
+    InvalidMintedgemProgram,
+
     #[msg("Mintedgem: Only owner can call this function!")]
     NotOwner,
 
