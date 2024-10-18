@@ -11,6 +11,9 @@ pub enum CustomErrors {
     #[msg("Mintedgem: User Insufficient amount")]
     UserInsufficientAmount,
 
+    #[msg("Mintedgem: Invalid admin")]
+    InvalidAdmin,
+
     #[msg("Mintedgem: Only owner can call this function!")]
     NotOwner,
 

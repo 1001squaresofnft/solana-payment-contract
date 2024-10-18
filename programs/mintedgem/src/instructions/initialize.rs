@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::MASTER,
+    constants::{ADMIN_ADDRESS, MASTER},
     errors::CustomErrors,
     events::OwnerInitialized,
     state::Master,
@@ -28,6 +28,7 @@ pub fn process(ctx: Context<InitializeCtx>, percent_pay_w_sol: u16, percent_pay_
     let master = &mut ctx.accounts.master;
     let signer = &ctx.accounts.signer;
 
+    require_keys_eq!(ADMIN_ADDRESS, signer.key(), CustomErrors::InvalidAdmin);
     require!(percent_pay_w_sol <= 10000, CustomErrors::InvalidPercent);
     require!(percent_pay_w_done_token<= 10000, CustomErrors::InvalidPercent);
 

@@ -1634,7 +1634,7 @@ dependencies = [
 [[package]]
 name = "raydium-cp-swap"
 version = "0.1.0"
-source = "git+https://github.com/toanbt173404/raydium-cp-swap#b21030b86c199b73d644e2d9f8335ed99e84808a"
+source = "git+https://github.com/lainhathoang/raydium-cp-swap#b21030b86c199b73d644e2d9f8335ed99e84808a"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
