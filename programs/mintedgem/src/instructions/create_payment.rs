@@ -53,7 +53,10 @@ pub struct CreatePaymentContext<'info> {
     done_token_mint: InterfaceAccount<'info, Mint>,
 
     /// The program account of the pool in which the swap will be performed
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = (pool_state.load()?.token_0_mint == wsol_mint.key() && pool_state.load()?.token_1_mint == done_token_mint.key()) || (pool_state.load()?.token_0_mint == done_token_mint.key() && pool_state.load()?.token_1_mint == wsol_mint.key())
+    )]
     pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(
