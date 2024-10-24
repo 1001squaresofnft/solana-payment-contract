@@ -17,6 +17,12 @@ pub enum CustomErrors {
     #[msg("Mintedgem: Invalid mindgem program")]
     InvalidMintedgemProgram,
 
+    #[msg("Mintedgem: Invalid WSOL address")]
+    InvalidWSOLAddress,
+
+    #[msg("Mintedgem: Invalid DONE token address")]
+    InvalidDoneTokenAddress,
+
     #[msg("Mintedgem: Only owner can call this function!")]
     NotOwner,
 

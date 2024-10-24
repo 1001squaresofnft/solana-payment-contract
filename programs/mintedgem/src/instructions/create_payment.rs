@@ -49,7 +49,14 @@ pub struct CreatePaymentContext<'info> {
     )]
     vault_sol: Box<Account<'info, VaultSol>>,
 
+    #[account(
+        address = pubkey!("So11111111111111111111111111111111111111112") @ CustomErrors::InvalidWSOLAddress
+    )]
     wsol_mint: InterfaceAccount<'info, Mint>,
+
+    #[account(
+        address = pubkey!("9oTVZfQ5Dx91k2MQWNkUhZKPLrMFMWSTvw1GR2q27TXu") @ CustomErrors::InvalidDoneTokenAddress
+    )]
     done_token_mint: InterfaceAccount<'info, Mint>,
 
     /// The program account of the pool in which the swap will be performed
